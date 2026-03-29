@@ -1,4 +1,12 @@
 {
   "schema_version": 1,
-  "entries": []
+  "entries": [
+    {
+      "name": "linear-pp-cli",
+      "category": "project-management",
+      "api": "Linear",
+      "description": "Offline-capable, agent-native CLI for the Linear API with SQLite-backed sync, search, and cross-entity queries.",
+      "path": "library/project-management/linear-pp-cli"
+    }
+  ]
 }
