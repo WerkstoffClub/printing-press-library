@@ -4,6 +4,13 @@ The curated collection of CLIs built by the [CLI Printing Press](https://github.
 
 Every CLI in this library was generated from an API spec, verified through the press's quality gates, and submitted via the `/printing-press publish` skill. They're not wrappers — they have local SQLite sync, offline search, workflow commands, and agent-optimized output.
 
+## Published CLIs
+
+| CLI | Category | API | What it does |
+|-----|----------|-----|-------------|
+| **[espn-pp-cli](library/media-and-entertainment/espn-pp-cli/)** | Media & Entertainment | ESPN | Sports data — scores, stats, standings, schedules, news, odds across 17 sports and 139 leagues. No API key required. |
+| **[linear-pp-cli](library/project-management/linear-pp-cli/)** | Project Management | Linear | Issues, cycles, teams, projects via GraphQL. Local sync, stale detection, team health scoring. |
+
 ## Install from the Library
 
 Each CLI is a standalone Go module. You need [Go 1.23+](https://go.dev/dl/) installed.
@@ -11,12 +18,10 @@ Each CLI is a standalone Go module. You need [Go 1.23+](https://go.dev/dl/) inst
 ### go install (recommended)
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/library/<category>/<cli-name>/cmd/<cli-name>@latest
-```
+# ESPN — sports scores, stats, standings
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/cmd/espn-pp-cli@latest
 
-For example, to install the Linear CLI:
-
-```bash
+# Linear — issues, cycles, team health
 go install github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/cmd/linear-pp-cli@latest
 ```
 
@@ -45,12 +50,13 @@ library/
         <run-id>/
           research/
           proofs/
+          discovery/
       README.md
       go.mod
       ...
 ```
 
-CLIs are organized by category. Each CLI folder is self-contained — it includes the full source code, the provenance manifest, and the manuscripts (research briefs, shipcheck results) from the printing run.
+CLIs are organized by category. Each CLI folder is self-contained — it includes the full source code, the provenance manifest, and the manuscripts (research briefs, shipcheck results, discovery provenance) from the printing run.
 
 ## Categories
 
@@ -78,7 +84,7 @@ Every CLI in this library has passed:
 
 1. **Generation** — Built by the CLI Printing Press from an API spec
 2. **Validation** — `go build`, `go vet`, `--help`, and `--version` all pass
-3. **Provenance** �� `.printing-press.json` manifest and `.manuscripts/` artifacts are present
+3. **Provenance** — `.printing-press.json` manifest and `.manuscripts/` artifacts are present
 
 CLIs may be improved after generation (emboss passes, manual refinements). The manuscripts show what was originally generated, and the diff shows what changed.
 
@@ -91,16 +97,26 @@ CLIs may be improved after generation (emboss passes, manual refinements). The m
   "schema_version": 1,
   "entries": [
     {
-      "cli_name": "notion-pp-cli",
-      "api_name": "notion",
-      "category": "productivity",
-      "description": "Notion workspace CLI with offline sync and search",
-      "printing_press_version": "0.3.0",
-      "published_date": "2026-03-29"
+      "cli_name": "espn-pp-cli",
+      "api_name": "espn",
+      "category": "media-and-entertainment",
+      "description": "ESPN sports data CLI — scores, stats, standings across 17 sports",
+      "path": "library/media-and-entertainment/espn-pp-cli"
+    },
+    {
+      "cli_name": "linear-pp-cli",
+      "api_name": "linear",
+      "category": "project-management",
+      "description": "Linear project management CLI with offline sync and team health",
+      "path": "library/project-management/linear-pp-cli"
     }
   ]
 }
 ```
+
+## Want to generate your own?
+
+The [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press) has 18 APIs in its catalog ready to go, and can generate CLIs from any OpenAPI spec, GraphQL schema, or even sniffed browser traffic.
 
 ## Contributing
 
