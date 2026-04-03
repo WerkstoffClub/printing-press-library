@@ -14,6 +14,13 @@
       "api": "postman-explore",
       "description": "Search and browse the Postman API Network — 700K+ public collections, workspaces, and APIs.",
       "path": "library/developer-tools/postman-explore-pp-cli"
+    },
+    {
+      "name": "steam-web-pp-cli",
+      "category": "media-and-entertainment",
+      "api": "Steam Web API",
+      "description": "Query Steam player profiles, game libraries, achievements, and friends from the terminal. 90/100 Grade A.",
+      "path": "library/media-and-entertainment/steam-web-pp-cli"
     }
   ]
 }
