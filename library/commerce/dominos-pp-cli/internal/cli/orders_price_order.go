@@ -49,10 +49,11 @@ func newOrdersPriceOrderCmd(flags *rootFlags) *cobra.Command {
 				}
 				body = jsonBody
 			} else {
-				body = map[string]any{}
-				if bodyOrder != "" {
-					body["Order"] = bodyOrder
+				var parsed map[string]any
+				if err := json.Unmarshal([]byte(bodyOrder), &parsed); err != nil {
+					return fmt.Errorf("parsing --order JSON: %w", err)
 				}
+				body = parsed
 			}
 			data, statusCode, err := c.Post(path, body)
 			if err != nil {

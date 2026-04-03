@@ -64,67 +64,67 @@ func RegisterTools(s *server.MCPServer) {
 		mcplib.NewTool("graphql_categories",
 			mcplib.WithDescription("Get menu categories for a store"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_create_cart",
 			mcplib.WithDescription("Create a new shopping cart"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_customer",
 			mcplib.WithDescription("Get authenticated customer profile with saved addresses and preferences"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_deals_list",
 			mcplib.WithDescription("Get available deals and coupons for a store"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_get_cart",
 			mcplib.WithDescription("Get cart by ID with items and pricing"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_loyalty_deals",
 			mcplib.WithDescription("Get member-exclusive deals"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_loyalty_points",
 			mcplib.WithDescription("Get loyalty points balance and status"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_loyalty_rewards",
 			mcplib.WithDescription("Get available loyalty rewards by tier"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_products",
 			mcplib.WithDescription("Get products in a category with customization options"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_quick_add_product",
 			mcplib.WithDescription("Quick-add a product to cart by code"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("graphql_summary_charges",
 			mcplib.WithDescription("Get cart totals including tax and delivery fee"),
 		),
-		makeAPIHandler("POST", "/api/web-bff/graphql", []string{}),
+		makeAPIHandler("POST", "/web-bff/graphql", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("menu_get_menu",

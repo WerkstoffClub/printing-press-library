@@ -28,7 +28,7 @@ func newDealsListCmd(flags *rootFlags) *cobra.Command {
 			return err
 		}
 		body := map[string]any{"operationName": "DealsList", "variables": map[string]any{"storeId": storeID, "serviceMethod": service}, "query": ""}
-		data, _, err := c.Post("/api/web-bff/graphql", body)
+		data, _, err := c.Post("/web-bff/graphql", body)
 		if err != nil {
 			return classifyAPIError(err)
 		}

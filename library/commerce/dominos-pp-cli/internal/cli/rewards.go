@@ -98,7 +98,7 @@ func rewardsGraphQL(flags *rootFlags, op string, vars map[string]any) (json.RawM
 	if err != nil {
 		return nil, err
 	}
-	data, _, err := c.Post("/api/web-bff/graphql", map[string]any{"operationName": op, "variables": vars, "query": ""})
+	data, _, err := c.Post("/web-bff/graphql", map[string]any{"operationName": op, "variables": vars, "query": ""})
 	if err != nil {
 		return nil, classifyAPIError(err)
 	}

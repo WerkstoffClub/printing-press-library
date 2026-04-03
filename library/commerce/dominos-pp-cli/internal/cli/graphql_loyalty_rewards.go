@@ -33,7 +33,7 @@ func newGraphqlLoyaltyRewardsCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/api/web-bff/graphql"
+			path := "/web-bff/graphql"
 			var body map[string]any
 			if stdinBody {
 				stdinData, err := io.ReadAll(os.Stdin)
@@ -117,7 +117,6 @@ func newGraphqlLoyaltyRewardsCmd(flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&bodyOperationName, "operationname", "LoyaltyRewards", "GraphQL operation name")
-	_ = cmd.MarkFlagRequired("operationname")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

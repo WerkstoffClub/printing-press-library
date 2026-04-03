@@ -101,6 +101,8 @@ func Execute() error {
 	rootCmd.AddCommand(newAddressCmd(&flags))
 	rootCmd.AddCommand(newTrackingCmd(&flags))
 	rootCmd.AddCommand(newTrackCmd(&flags))
+	rootCmd.AddCommand(newCheckoutCmd(&flags))
+	rootCmd.AddCommand(newQuickstartCmd(&flags))
 	rootCmd.AddCommand(newDoctorCmd(&flags))
 	rootCmd.AddCommand(newAuthCmd(&flags))
 	rootCmd.AddCommand(newExportCmd(&flags))

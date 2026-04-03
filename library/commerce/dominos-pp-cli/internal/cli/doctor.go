@@ -36,10 +36,31 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				header := cfg.AuthHeader()
 				if header == "" {
 					report["auth"] = "not configured"
-					report["auth_hint"] = "export DOMINOS_TOKEN=<your-key>"
+					report["auth_hint"] = "Run `dominos-pp-cli quickstart` to get started, or `dominos-pp-cli auth set-token <token>`"
 				} else {
 					report["auth"] = "configured"
 					report["auth_source"] = cfg.AuthSource
+
+					// Check profile completeness
+					profile := cfg.Profile()
+					if profile.FirstName == "" || profile.LastName == "" || profile.Phone == "" {
+						report["profile"] = "incomplete"
+						report["profile_hint"] = "Run `dominos-pp-cli checkout` to set up your profile, or set first_name/last_name/phone in config"
+					} else {
+						report["profile"] = fmt.Sprintf("%s %s (%s)", profile.FirstName, profile.LastName, profile.Email)
+					}
+
+					// Check token expiry
+					token := cfg.DominosToken
+					if token == "" {
+						token = cfg.AccessToken
+					}
+					if token != "" {
+						claims := config.DecodeJWTClaims(token)
+						if claims.IsExpired() {
+							report["token_expiry"] = "expired — re-authenticate with a fresh token"
+						}
+					}
 				}
 			}
 
@@ -130,6 +151,8 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			checkKeys := []struct{ key, label string }{
 				{"config", "Config"},
 				{"auth", "Auth"},
+				{"profile", "Profile"},
+				{"token_expiry", "Token"},
 				{"api", "API"},
 				{"credentials", "Credentials"},
 			}
@@ -148,7 +171,7 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				fmt.Fprintf(w, "  %s %s: %s\n", indicator, ck.label, s)
 			}
 			// Print info keys without status indicator
-			for _, key := range []string{"config_path", "base_url", "auth_source", "version"} {
+			for _, key := range []string{"config_path", "base_url", "auth_source", "profile_hint", "version"} {
 				if v, ok := report[key]; ok {
 					fmt.Fprintf(w, "  %s: %v\n", key, v)
 				}

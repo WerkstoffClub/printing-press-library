@@ -24,6 +24,10 @@ type Config struct {
 	ClientSecret  string    `toml:"client_secret"`
 	Path          string    `toml:"-"`
 	DominosToken  string    `toml:"token"`
+	FirstName     string    `toml:"first_name"`
+	LastName      string    `toml:"last_name"`
+	Phone         string    `toml:"phone"`
+	Email         string    `toml:"email"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -123,6 +127,50 @@ func (c *Config) save() error {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
 	return os.WriteFile(c.Path, data, 0o600)
+}
+
+// UserProfile holds merged user information from config and JWT.
+type UserProfile struct {
+	FirstName  string
+	LastName   string
+	Phone      string
+	Email      string
+	CustomerID string
+}
+
+// Profile returns the user's profile, merging config fields with JWT claims.
+// Config fields take precedence over JWT-derived fields.
+func (c *Config) Profile() UserProfile {
+	p := UserProfile{
+		FirstName: c.FirstName,
+		LastName:  c.LastName,
+		Phone:     c.Phone,
+		Email:     c.Email,
+	}
+
+	// Fill in from JWT if config fields are empty
+	token := c.DominosToken
+	if token == "" {
+		token = c.AccessToken
+	}
+	if token != "" {
+		claims := DecodeJWTClaims(token)
+		if p.Email == "" {
+			p.Email = claims.Email
+		}
+		p.CustomerID = claims.CustomerID
+	}
+
+	return p
+}
+
+// SaveProfile persists user profile fields to the config file.
+func (c *Config) SaveProfile(firstName, lastName, phone, email string) error {
+	c.FirstName = firstName
+	c.LastName = lastName
+	c.Phone = phone
+	c.Email = email
+	return c.save()
 }
 
 // Ensure strings import is used
