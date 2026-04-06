@@ -89,7 +89,7 @@ The binary lands in your `$GOPATH/bin` (or `$HOME/go/bin` by default). Make sure
 git clone https://github.com/mvanhorn/printing-press-library.git
 cd printing-press-library/library/<category>/<cli-name>
 go install ./cmd/<cli-name>       # CLI
-go install ./cmd/<cli-name-mcp>   # MCP server (if available)
+go install ./cmd/<cli-name-pp-mcp>   # MCP server (if available)
 ```
 
 Check each CLI's own README for usage, configuration, and required environment variables.
@@ -167,6 +167,7 @@ CLIs may be improved after generation (emboss passes, manual refinements). The m
         "tool_count": 3,
         "public_tool_count": 3,
         "auth_type": "none",
+        "env_vars": [],
         "mcp_ready": "full"
       }
     }
