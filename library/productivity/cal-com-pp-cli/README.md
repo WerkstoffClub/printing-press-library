@@ -7,7 +7,7 @@ Manage bookings, event types, schedules, and availability via the Cal.com API.
 ### Go
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/github.com/mvanhorn/printing-press-library/library/productivity/cal-com-pp-cli/cmd/cal-com-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/cal-com-pp-cli/cmd/cal-com-pp-cli@latest
 ```
 
 ### Binary
@@ -52,6 +52,16 @@ cal-com-pp-cli conflicts
 # 5. Search across all your bookings
 cal-com-pp-cli search "design review"
 ```
+
+## Unique Features
+
+These capabilities aren't available in any other Cal.com tool.
+
+- **`conflicts`** — Find double-bookings and overlapping events across all your calendars
+- **`today`** — See today's bookings with attendee details, conferencing links, and prep notes
+- **`stats`** — Track booking volume, busiest hours, and cancellation rates over time
+- **`noshow`** — Identify which event types and time slots have the highest no-show rates
+- **`search`** — Instant full-text search across all bookings, even offline
 
 ## Commands
 
@@ -243,40 +253,6 @@ Environment variables:
 - Check disk space at `~/.local/share/cal-com-pp-cli/data.db`
 
 ---
-
-## What's New Here
-
-These capabilities don't exist in any other tool for this API.
-
-### `cal-com-pp-cli conflicts`
-
-Find double-bookings and overlapping events across all your calendars before they cause missed meetings
-
-> Requires correlating bookings, event types, and schedules from multiple sources that only exist together in the local store
-
-### `cal-com-pp-cli today`
-
-See all of today's bookings with attendee details, conferencing links, and prep notes in one command
-
-> Requires joining booking, calendar, and event-type data locally -- no existing tool provides a unified daily view
-
-### `cal-com-pp-cli stats`
-
-Track booking volume, busiest hours, cancellation rates, and booking-to-completion rates over time
-
-> Requires historical booking data that only accumulates in the local SQLite store -- Cal.com Insights is paid-tier only
-
-### `cal-com-pp-cli noshow`
-
-Identify which event types, days, and time slots have the highest no-show rates to optimize your schedule
-
-> Requires aggregating mark-absent data across bookings over time -- no existing tool tracks no-show patterns
-
-### `cal-com-pp-cli search`
-
-Instantly search across all booking titles, attendee names, and notes -- even offline
-
-> Cal.com API has no search endpoint; requires FTS5 index built from synced booking data in the local store
 
 ## Sources & Inspiration
 
