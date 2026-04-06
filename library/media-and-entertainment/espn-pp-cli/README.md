@@ -33,13 +33,13 @@ espn-pp-cli search "Patrick Mahomes"
 ## Install
 
 ```bash
-go install github.com/mvanhorn/espn-pp-cli/cmd/espn-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/cmd/espn-pp-cli@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/mvanhorn/espn-pp-cli
+git clone https://github.com/mvanhorn/printing-press-library
 cd espn-pp-cli
 go install ./cmd/espn-pp-cli
 ```

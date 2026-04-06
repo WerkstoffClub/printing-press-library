@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/user/linear-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 

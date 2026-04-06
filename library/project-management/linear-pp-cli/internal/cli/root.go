@@ -9,8 +9,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/user/linear-pp-cli/internal/client"
-	"github.com/user/linear-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 

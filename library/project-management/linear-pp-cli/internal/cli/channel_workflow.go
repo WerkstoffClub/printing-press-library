@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/user/linear-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/store"
 	"github.com/spf13/cobra"
 )
 

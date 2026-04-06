@@ -1,4 +1,4 @@
-module github.com/user/linear-pp-cli
+module github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli
 
 go 1.23.0
 

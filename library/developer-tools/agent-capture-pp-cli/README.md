@@ -9,7 +9,7 @@ Consolidates macOS screen capture, window recording, GIF conversion, frame stitc
 ## Quick Start
 
 ```bash
-go install github.com/mvanhorn/agent-capture-pp-cli/cmd/agent-capture@latest
+go install github.com/mvanhorn/printing-press-library/library/developer-tools/agent-capture-pp-cli/cmd/agent-capture-pp-cli@latest
 agent-capture doctor
 ```
 

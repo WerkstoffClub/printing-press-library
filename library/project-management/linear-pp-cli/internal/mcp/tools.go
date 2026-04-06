@@ -14,9 +14,9 @@ import (
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/user/linear-pp-cli/internal/client"
-	"github.com/user/linear-pp-cli/internal/config"
-	"github.com/user/linear-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/store"
 )
 
 // RegisterTools registers all API operations as MCP tools.

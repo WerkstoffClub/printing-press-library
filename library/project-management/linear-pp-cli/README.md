@@ -13,12 +13,12 @@ brew install user/tap/linear-pp-cli
 ### Go
 
 ```
-go install github.com/user/linear-pp-cli/cmd/linear-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/cmd/linear-pp-cli@latest
 ```
 
 ### Binary
 
-Download from [Releases](https://github.com/user/linear-pp-cli/releases).
+Download from [Releases](https://github.com/mvanhorn/printing-press-library/releases).
 
 ## Quick Start
 

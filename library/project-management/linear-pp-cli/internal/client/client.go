@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/user/linear-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/internal/config"
 )
 
 type Client struct {

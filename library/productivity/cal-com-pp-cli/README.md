@@ -7,7 +7,7 @@ Manage bookings, event types, schedules, and availability via the Cal.com API.
 ### Go
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/cal-com-pp-cli/cmd/cal-com-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/productivity/cal-com-pp-cli/cmd/cal-com-pp-cli@latest
 ```
 
 ### Binary
