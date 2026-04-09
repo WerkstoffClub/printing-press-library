@@ -690,27 +690,98 @@ func (s *Store) SQL(query string) ([]map[string]interface{}, error) {
 }
 
 func (s *Store) Count(resourceType string) (int, error) {
+	if !allowedEntityTable(resourceType) {
+		return 0, fmt.Errorf("unknown resource type %q", resourceType)
+	}
 	var count int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM resources WHERE resource_type = ?`, resourceType).Scan(&count)
+	err := s.db.QueryRow(fmt.Sprintf(`SELECT COUNT(*) FROM %s`, resourceType)).Scan(&count)
 	return count, err
 }
 
-func (s *Store) Status() (map[string]int, error) {
-	rows, err := s.db.Query(`SELECT resource_type, COUNT(*) FROM resources GROUP BY resource_type ORDER BY resource_type`)
+// GroupResult holds one row from a GROUP BY aggregation.
+type GroupResult struct {
+	Value string `json:"value"`
+	Count int    `json:"count"`
+}
+
+// GroupBy runs a GROUP BY query on a column in an entity table.
+func (s *Store) GroupBy(table, column string, limit int) ([]GroupResult, error) {
+	if !allowedEntityTable(table) {
+		return nil, fmt.Errorf("unknown resource type %q", table)
+	}
+	if limit <= 0 {
+		limit = 25
+	}
+	// Validate column exists via PRAGMA
+	cols, err := s.tableColumns(table)
+	if err != nil {
+		return nil, err
+	}
+	found := false
+	for _, c := range cols {
+		if c == column {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("column %q not found in %s (available: %s)", column, table, strings.Join(cols, ", "))
+	}
+	query := fmt.Sprintf(`SELECT COALESCE(%s, '') AS val, COUNT(*) AS cnt FROM %s GROUP BY val ORDER BY cnt DESC LIMIT ?`, column, table)
+	rows, err := s.db.Query(query, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	status := make(map[string]int)
+	var results []GroupResult
 	for rows.Next() {
-		var rt string
-		var count int
-		if err := rows.Scan(&rt, &count); err != nil {
+		var r GroupResult
+		if err := rows.Scan(&r.Value, &r.Count); err != nil {
 			return nil, err
 		}
-		status[rt] = count
+		results = append(results, r)
 	}
-	return status, rows.Err()
+	if results == nil {
+		results = []GroupResult{}
+	}
+	return results, rows.Err()
+}
+
+func (s *Store) tableColumns(table string) ([]string, error) {
+	rows, err := s.db.Query(fmt.Sprintf(`PRAGMA table_info(%s)`, table))
+	if err != nil {
+		return nil, fmt.Errorf("inspecting %s schema: %w", table, err)
+	}
+	defer rows.Close()
+	var cols []string
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return nil, err
+		}
+		if name != "data" && name != "synced_at" {
+			cols = append(cols, name)
+		}
+	}
+	return cols, rows.Err()
+}
+
+func (s *Store) Status() (map[string]int, error) {
+	status := make(map[string]int)
+	for table := range entityTables {
+		var count int
+		err := s.db.QueryRow(fmt.Sprintf(`SELECT COUNT(*) FROM %s`, table)).Scan(&count)
+		if err != nil {
+			continue
+		}
+		if count > 0 {
+			status[table] = count
+		}
+	}
+	return status, nil
 }
 
 func (s *Store) ResolveByName(resourceType string, input string, matchFields ...string) (string, error) {
@@ -778,8 +849,27 @@ func buildFilters(filter map[string]string, allowed map[string]string) (string, 
 	return strings.Join(clauses, " AND "), args
 }
 
+var entityTables = map[string]bool{
+	"issues": true, "cycles": true, "projects": true, "teams": true, "users": true,
+	"workflow_states": true, "issue_labels": true,
+	// otherTables from migrate()
+	"audit_entry_types": true, "documents": true, "initiative_to_projects": true,
+	"user_settingses": true, "custom_views": true, "organizations": true,
+	"roadmap_to_projects": true, "organization_invites": true, "team_memberships": true,
+	"customers": true, "initiatives": true, "project_relations": true,
+	"project_labels": true, "issue_relations": true, "releases": true,
+	"attachments": true, "authentication_session_responses": true, "favorites": true,
+	"integrations": true, "release_stages": true, "project_milestones": true,
+	"project_statuses": true, "release_pipelines": true,
+	"auth_resolver_responses": true, "issue_to_releases": true, "templates": true,
+	"customer_statuses": true, "customer_tiers": true,
+	"email_intake_addresses": true, "entity_external_links": true,
+	"issue_priority_values": true, "organization_metas": true, "roadmaps": true,
+	"integration_templates": true, "integrations_settingses": true,
+}
+
 func allowedEntityTable(table string) bool {
-	return strings.Contains(",issues,cycles,projects,teams,users,workflow_states,issue_labels,", ","+table+",")
+	return entityTables[table]
 }
 
 func contains(items []string, want string) bool {
