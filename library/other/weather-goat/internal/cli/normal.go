@@ -22,6 +22,11 @@ func newNormalCmd(flags *rootFlags) *cobra.Command {
   weather-goat-pp-cli normal "Chicago"
   weather-goat-pp-cli normal --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "GET /forecast + /archive (Open-Meteo)")
+				return nil
+			}
+
 			cfg, err := config.Load(flags.configPath)
 			if err != nil {
 				return configErr(err)

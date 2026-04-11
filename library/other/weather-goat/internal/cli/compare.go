@@ -14,8 +14,14 @@ func newCompareCmd(flags *rootFlags) *cobra.Command {
 		Long:  "Fetch current conditions for two locations and display a side-by-side comparison of temperature, wind, precipitation, and UV.",
 		Example: `  weather-goat-pp-cli compare "San Francisco" "Los Angeles"
   weather-goat-pp-cli compare "New York" "Miami" --json`,
-		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "GET /forecast (Open-Meteo) x2")
+				return nil
+			}
+			if len(args) < 2 {
+				return usageErr(fmt.Errorf("requires two location arguments\nUsage: weather-goat-pp-cli compare <location1> <location2>"))
+			}
 			lat1, lon1, name1, err := geocodeLookup(args[0])
 			if err != nil {
 				return fmt.Errorf("resolving %q: %w", args[0], err)

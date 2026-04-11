@@ -30,8 +30,14 @@ Activities:
   weather-goat-pp-cli go bike "Portland"
   weather-goat-pp-cli go commute
   weather-goat-pp-cli go drive --json`,
-		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "GET /forecast + /air-quality (Open-Meteo)")
+				return nil
+			}
+			if len(args) < 1 {
+				return usageErr(fmt.Errorf("requires an activity argument\nUsage: weather-goat-pp-cli go <activity> [location]\nActivities: walk, bike, hike, commute, drive"))
+			}
 			activity := strings.ToLower(args[0])
 			locationArgs := args[1:]
 

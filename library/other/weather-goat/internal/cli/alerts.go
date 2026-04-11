@@ -23,6 +23,11 @@ func newAlertsCmd(flags *rootFlags) *cobra.Command {
   weather-goat-pp-cli alerts --latitude 47.6 --longitude -122.3
   weather-goat-pp-cli alerts --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "GET /alerts/active (NWS)")
+				return nil
+			}
+
 			var alerts []map[string]any
 			var err error
 

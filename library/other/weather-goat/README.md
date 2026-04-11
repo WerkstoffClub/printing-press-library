@@ -1,8 +1,8 @@
 # Weather Goat CLI
 
-Weather GOAT — forecasts, alerts, air quality, and activity verdicts powered by Open-Meteo and NWS
+The weather CLI that answers the questions you actually ask: Should I bike today? Do I need an umbrella for the walk home? Is there a tornado warning? Is this summer hotter than normal?
 
-Learn more at [Weather](https://open-meteo.com).
+Powered by Open-Meteo (global forecasts, 80 years of history, air quality) and NWS (severe weather alerts). No API key required.
 
 ## Install
 
@@ -16,101 +16,136 @@ go install github.com/mvanhorn/printing-press-library/library/other/weather-goat
 
 Download from [Releases](https://github.com/mvanhorn/printing-press-library/releases).
 
+## Authentication
+
+Open-Meteo is a free API — no API key required. NWS alerts also require no authentication.
+
 ## Quick Start
 
-### 1. Install
-
-See [Install](#install) above.
-
-### 2. Verify Setup
-
 ```bash
+# 1. Set your default location
+weather-goat-pp-cli config set-location "Seattle"
+
+# 2. Check your setup
 weather-goat-pp-cli doctor
+
+# 3. Get a full weather brief (current conditions + forecast + alerts)
+weather-goat-pp-cli
+
+# 4. Should I bike today?
+weather-goat-pp-cli go bike
+
+# 5. Check air quality before going outside
+weather-goat-pp-cli breathe
 ```
 
-This checks your configuration.
+## What Makes This Different
 
-### 3. Try Your First Command
+Every weather CLI shows you temperature and precipitation. Weather Goat answers the questions that actually drive decisions.
 
-```bash
-weather-goat-pp-cli air-quality list
-```
+**"Should I bike today?"** — `go bike` checks wind, rain, temperature, ice, and air quality. Returns GO, CAUTION, or STOP with specific reasons.
 
-## Unique Features
+**"Do I need an umbrella for the walk home?"** — `go commute` checks the forecast at your departure AND return times. "Clear this morning, rain by 5pm — take an umbrella."
 
-These capabilities aren't available in any other tool for this API.
+**"Is there a severe weather warning?"** — `alerts` pulls active NWS warnings (tornado, storm, flood, heat). `watch` polls every 60 seconds during active weather.
 
-- **`weather`** — Current conditions + today's forecast + active alerts in one glance — zero args after setup
-- **`go`** — GO/CAUTION/STOP verdicts for walk, bike, hike, commute, and drive based on weather thresholds
-- **`normal`** — Compare today's weather to the 30-year historical average — see if this temperature is unusual
-- **`compare`** — Side-by-side forecast for two locations to help choose where to go
-- **`breathe`** — Combined AQI + pollen + UV with outdoor exercise recommendation
+**"Is this summer actually hotter than normal?"** — `normal` compares today to the historical average for this date. "Today is 8°F above average for April 11."
 
-## Usage
+**"Beach or mountains this weekend?"** — `compare "Malibu" "Big Bear"` shows side-by-side forecasts.
 
-<!-- HELP_OUTPUT -->
+**"Is the air quality safe to run in?"** — `breathe` shows AQI, pollen, UV, and whether it's safe to exercise outdoors.
 
 ## Commands
 
-### air-quality
+### Weather & Forecasts
 
-Get air quality data — AQI, pollen, PM2.5, UV index
+| Command | Description |
+|---------|-------------|
+| `weather-goat-pp-cli` | Morning brief — current conditions, today's forecast, active alerts |
+| `forecast` | Current weather and daily forecast (temperature, precip, sunrise/sunset) |
+| `forecast hourly` | Hourly forecast for the next 48 hours |
+| `history` | Historical weather data for any date back to 1940 |
+| `normal` | Compare today's temperature to the historical average |
+| `compare` | Side-by-side weather comparison of two locations |
 
-- **`weather-goat-pp-cli air-quality get`** - Get current air quality index, PM2.5, PM10, pollen levels, and UV index
+### Activity Verdicts
 
-### forecast
+| Command | Description |
+|---------|-------------|
+| `go walk` | Walking prep advice — umbrella, layers, sunscreen |
+| `go bike` | GO/CAUTION/STOP for wind, rain, temperature, AQI |
+| `go hike` | GO/CAUTION/STOP for thunderstorms, hypothermia, UV, wind |
+| `go commute` | Morning vs evening forecast with umbrella advice |
+| `go drive` | GO/CAUTION/STOP for visibility, ice, wind, NWS warnings |
 
-Get weather forecasts — current, hourly, and daily
+### Air Quality & Alerts
 
-- **`weather-goat-pp-cli forecast hourly`** - Get hourly forecast for the next 48 hours
-- **`weather-goat-pp-cli forecast now`** - Get current weather conditions and today's forecast
+| Command | Description |
+|---------|-------------|
+| `air-quality` | AQI, PM2.5, PM10, pollen, UV index |
+| `breathe` | Air quality + pollen + UV with exercise safety recommendation |
+| `alerts` | Active NWS weather alerts for a location or state |
+| `watch` | Continuously poll NWS alerts and print new ones |
 
-### geocoding
+### Location & Data
 
-Resolve location names to coordinates
+| Command | Description |
+|---------|-------------|
+| `geocoding` | Search for a location by name and get coordinates |
+| `sync` | Sync API data to local SQLite for offline access |
+| `analytics` | Run analytics queries on locally synced data |
+| `export` | Export data to JSONL or JSON |
+| `import` | Import data from JSONL file |
 
-- **`weather-goat-pp-cli geocoding search`** - Search for a location by name and get coordinates
+### Utilities
 
-### history
-
-Get historical weather data (1940-present)
-
-- **`weather-goat-pp-cli history get`** - Get historical weather data for any date back to 1940
-
+| Command | Description |
+|---------|-------------|
+| `config set-location` | Save your default location |
+| `config set-commute` | Save commute departure and return times |
+| `config show` | Display current configuration |
+| `doctor` | Check CLI health and connectivity |
+| `api` | Browse all API endpoints |
+| `workflow` | Compound workflows combining multiple operations |
+| `auth` | Manage authentication tokens |
 
 ## Output Formats
 
 ```bash
-# Human-readable table (default in terminal, JSON when piped)
-weather-goat-pp-cli air-quality list
+# Human-readable (default in terminal, JSON when piped)
+weather-goat-pp-cli forecast --latitude 47.6 --longitude -122.3
 
 # JSON for scripting and agents
-weather-goat-pp-cli air-quality list --json
+weather-goat-pp-cli forecast --latitude 47.6 --longitude -122.3 --json
 
 # Filter to specific fields
-weather-goat-pp-cli air-quality list --json --select id,name,status
+weather-goat-pp-cli forecast --latitude 47.6 --longitude -122.3 --json --select temperature_2m,wind_speed_10m
+
+# CSV output
+weather-goat-pp-cli history --latitude 47.6 --longitude -122.3 --start-date 2024-01-01 --end-date 2024-01-31 --csv
+
+# Compact output (key fields only, for agents)
+weather-goat-pp-cli geocoding "Seattle" --compact
 
 # Dry run — show the request without sending
-weather-goat-pp-cli air-quality list --dry-run
+weather-goat-pp-cli forecast --latitude 47.6 --longitude -122.3 --dry-run
 
 # Agent mode — JSON + compact + no prompts in one flag
-weather-goat-pp-cli air-quality list --agent
+weather-goat-pp-cli go bike "Portland" --agent
 ```
 
 ## Agent Usage
 
 This CLI is designed for AI agent consumption:
 
-- **Non-interactive** - never prompts, every input is a flag
-- **Pipeable** - `--json` output to stdout, errors to stderr
-- **Filterable** - `--select id,name` returns only fields you need
-- **Previewable** - `--dry-run` shows the request without sending
-- **Retryable** - creates return "already exists" on retry, deletes return "already deleted"
-- **Confirmable** - `--yes` for explicit confirmation of destructive actions
-- **Piped input** - `echo '{"key":"value"}' | weather-goat-pp-cli <resource> create --stdin`
-- **Cacheable** - GET responses cached for 5 minutes, bypass with `--no-cache`
-- **Agent-safe by default** - no colors or formatting unless `--human-friendly` is set
-- **Progress events** - paginated commands emit NDJSON events to stderr in default mode
+- **Non-interactive** — never prompts, every input is a flag
+- **Pipeable** — `--json` output to stdout, errors to stderr
+- **Filterable** — `--select id,name` returns only fields you need
+- **Previewable** — `--dry-run` shows the request without sending
+- **Confirmable** — `--yes` for explicit confirmation of destructive actions
+- **Cacheable** — GET responses cached for 5 minutes, bypass with `--no-cache`
+- **Agent-safe by default** — no colors or formatting unless `--human-friendly` is set
+- **Progress events** — paginated commands emit NDJSON events to stderr
 
 Exit codes: `0` success, `2` usage error, `3` not found, `4` auth error, `5` API error, `7` rate limited, `10` config error.
 
@@ -121,7 +156,7 @@ This CLI ships a companion MCP server for use with Claude Desktop, Cursor, and o
 ### Claude Code
 
 ```bash
-claude mcp add weather weather-pp-mcp
+claude mcp add weather weather-goat-pp-mcp
 ```
 
 ### Claude Desktop
@@ -132,7 +167,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 {
   "mcpServers": {
     "weather": {
-      "command": "weather-pp-mcp"
+      "command": "weather-goat-pp-mcp"
     }
   }
 }
@@ -140,26 +175,46 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 ## Cookbook
 
-Common workflows and recipes:
-
 ```bash
-# List resources as JSON for scripting
-weather-goat-pp-cli air-quality list --json
+# Morning brief — what's the weather right now?
+weather-goat-pp-cli
 
-# Filter to specific fields
-weather-goat-pp-cli air-quality list --json --select id,name,status
+# Should I bike to work today?
+weather-goat-pp-cli go bike
 
-# Dry run to preview the request
-weather-goat-pp-cli air-quality list --dry-run
+# Compare two cities for a weekend trip
+weather-goat-pp-cli compare "San Francisco" "Los Angeles"
 
-# Sync data locally for offline search
+# Is this temperature unusual for this time of year?
+weather-goat-pp-cli normal
+
+# Check air quality before an outdoor run
+weather-goat-pp-cli breathe
+
+# Get NWS alerts for all of California
+weather-goat-pp-cli alerts --state CA
+
+# Watch for severe weather during a storm
+weather-goat-pp-cli watch "Oklahoma City" --interval 30
+
+# Historical weather on a specific date
+weather-goat-pp-cli history --latitude 47.6 --longitude -122.3 --start-date 2024-07-04 --end-date 2024-07-04
+
+# Commute forecast (set up times first)
+weather-goat-pp-cli config set-commute 08:00 18:00
+weather-goat-pp-cli go commute
+
+# Hourly forecast as JSON for scripting
+weather-goat-pp-cli forecast hourly --latitude 40.7 --longitude -74.0 --json
+
+# Pipe activity verdict to another tool
+weather-goat-pp-cli go drive --agent | jq '.verdict'
+
+# Sync data locally for offline access
 weather-goat-pp-cli sync
 
-# Search synced data
-weather-goat-pp-cli search "query"
-
-# Export for backup
-weather-goat-pp-cli export --format jsonl > backup.jsonl
+# Export synced data for analysis
+weather-goat-pp-cli export --format jsonl > weather-backup.jsonl
 ```
 
 ## Health Check
@@ -168,26 +223,62 @@ weather-goat-pp-cli export --format jsonl > backup.jsonl
 weather-goat-pp-cli doctor
 ```
 
-<!-- DOCTOR_OUTPUT -->
+```
+  OK Config: ok
+  WARN Auth: not required
+  OK API: reachable
+  config_path: ~/.config/weather-goat-pp-cli/config.toml
+  base_url: https://api.open-meteo.com/v1
+```
 
 ## Configuration
 
 Config file: `~/.config/weather-goat-pp-cli/config.toml`
 
-Environment variables:
+| Setting | Description |
+|---------|-------------|
+| `WEATHER_CONFIG` | Override config file path |
+| `WEATHER_BASE_URL` | Override API base URL (for self-hosted Open-Meteo) |
+
+Config file fields:
+
+| Field | Description |
+|-------|-------------|
+| `base_url` | API base URL (default: `https://api.open-meteo.com/v1`) |
+| `latitude` | Default latitude for location-based commands |
+| `longitude` | Default longitude for location-based commands |
+| `location_name` | Display name for the saved location |
+| `commute_depart_time` | Departure time for commute forecast (e.g., `08:00`) |
+| `commute_return_time` | Return time for commute forecast (e.g., `18:00`) |
+
+## Self-Hosting
+
+If you run a self-hosted Open-Meteo instance:
+
+```bash
+export WEATHER_BASE_URL=https://your-open-meteo-instance.example.com/v1
+```
+
+Or set `base_url` in your config file.
 
 ## Troubleshooting
 
 **Authentication errors (exit code 4)**
-- Run `weather-goat-pp-cli doctor` to check credentials
+- Open-Meteo is free and doesn't require authentication
+- Run `weather-goat-pp-cli doctor` to check connectivity
 
 **Not found errors (exit code 3)**
-- Check the resource ID is correct
-- Run the `list` command to see available items
+- Check the location name or coordinates are correct
+- Try `weather-goat-pp-cli geocoding "city name"` to verify coordinates
 
 **Rate limit errors (exit code 7)**
 - The CLI auto-retries with exponential backoff
-- If persistent, wait a few minutes and try again
+- Open-Meteo allows 10,000 requests/day on the free tier
+- If persistent, wait a few minutes or use `--rate-limit 1`
+
+**No location configured**
+- Run `weather-goat-pp-cli config set-location "City Name"` to save a default
+- Or pass a location inline: `weather-goat-pp-cli go walk "Denver"`
 
 ---
 

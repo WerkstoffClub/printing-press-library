@@ -22,10 +22,12 @@ func newForecastPromotedCmd(flags *rootFlags) *cobra.Command {
 	var flagForecastDays int
 
 	cmd := &cobra.Command{
-		Use:     "forecast",
-		Short:   "Get current weather conditions and today's forecast",
-		Long:    "Shortcut for 'forecast now'. Get current weather conditions and today's forecast",
-		Example: "  weather-goat-pp-cli forecast",
+		Use:   "forecast",
+		Short: "Get current weather conditions and today's forecast",
+		Long:  "Shortcut for 'forecast now'. Get current weather conditions and today's forecast",
+		Example: `  weather-goat-pp-cli forecast --latitude 47.6 --longitude -122.3
+  weather-goat-pp-cli forecast --latitude 40.7 --longitude -74.0 --forecast-days 3 --json
+  weather-goat-pp-cli forecast --latitude 34.0 --longitude -118.2 --temperature-unit celsius`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("latitude") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "latitude")

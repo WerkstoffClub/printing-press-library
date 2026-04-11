@@ -21,10 +21,12 @@ func newHistoryPromotedCmd(flags *rootFlags) *cobra.Command {
 	var flagTemperatureUnit string
 
 	cmd := &cobra.Command{
-		Use:     "history",
-		Short:   "Get historical weather data for any date back to 1940",
-		Long:    "Shortcut for 'history get'. Get historical weather data for any date back to 1940",
-		Example: "  weather-goat-pp-cli history",
+		Use:   "history",
+		Short: "Get historical weather data for any date back to 1940",
+		Long:  "Shortcut for 'history get'. Get historical weather data for any date back to 1940",
+		Example: `  weather-goat-pp-cli history --latitude 47.6 --longitude -122.3 --start-date 2024-01-01 --end-date 2024-01-31
+  weather-goat-pp-cli history --latitude 40.7 --longitude -74.0 --start-date 2023-07-01 --end-date 2023-07-31 --json
+  weather-goat-pp-cli history --latitude 34.0 --longitude -118.2 --start-date 1980-06-15 --end-date 1980-06-15`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("latitude") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "latitude")

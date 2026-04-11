@@ -21,6 +21,11 @@ func newBreatheCmd(flags *rootFlags) *cobra.Command {
   weather-goat-pp-cli breathe "Denver"
   weather-goat-pp-cli breathe --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "GET /air-quality (Open-Meteo)")
+				return nil
+			}
+
 			cfg, err := config.Load(flags.configPath)
 			if err != nil {
 				return configErr(err)

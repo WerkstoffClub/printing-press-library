@@ -25,6 +25,11 @@ func newWatchCmd(flags *rootFlags) *cobra.Command {
   weather-goat-pp-cli watch "Oklahoma City" --interval 30
   weather-goat-pp-cli watch --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "GET /alerts/active (NWS, polling)")
+				return nil
+			}
+
 			cfg, err := config.Load(flags.configPath)
 			if err != nil {
 				return configErr(err)
