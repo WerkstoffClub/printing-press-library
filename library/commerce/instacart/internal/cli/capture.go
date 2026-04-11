@@ -19,7 +19,7 @@ import (
 // to this URL. All CLI users then get fresh hashes by running
 // `instacart capture --remote`. A user-hostile story on its face, but it
 // scales: one maintainer per rotation serves every CLI installation.
-const DefaultRegistryURL = "https://raw.githubusercontent.com/mvanhorn/instacart-pp-cli/main/hashes.json"
+const DefaultRegistryURL = "https://raw.githubusercontent.com/mvanhorn/printing-press-library/main/library/commerce/instacart/hashes.json"
 
 // registryPayload is the shape of the remote hashes.json file:
 //
