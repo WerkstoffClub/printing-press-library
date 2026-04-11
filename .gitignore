@@ -14,6 +14,9 @@ __debug_bin*
 # Build artifacts from printing-press verify/scorecard
 *-validation
 
+# Generator build artifacts (CI uses `go run`, these come from local `go build`)
+tools/generate-skills/generate-skills
+
 # Vendored dependencies (each CLI manages its own)
 vendor/
 
