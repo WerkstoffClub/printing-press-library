@@ -113,7 +113,7 @@ func main() {
 	// Snapshot existing pp-* skill dirs before generation
 	beforeDirs := existingSkillDirs()
 
-	var totalGenerated, enrichedCount, registryOnlyCount, skippedCount int
+	var totalGenerated, enrichedCount, registryOnlyCount, skippedCount, upstreamCount int
 
 	for _, entry := range registry.Entries {
 		// Derive skill name: strip -pp-cli suffix, prepend pp-
@@ -180,6 +180,22 @@ func main() {
 		skillDir := filepath.Join("plugin", "skills", skillName)
 		skillFile := filepath.Join(skillDir, "SKILL.md")
 
+		// Upstream wins: if the printed CLI ships its own SKILL.md, copy it
+		// verbatim. The generator has research context (novel features,
+		// narrative, trigger phrases) that this tool can't reconstruct, so
+		// upstream is strictly better than enriched or registry-only synthesis.
+		copied, err := copyUpstreamSkill(entry.Path, skillDir, skillFile)
+		if err != nil {
+			log.Printf("Warning: could not copy upstream SKILL.md for %s: %v", entry.Name, err)
+			continue
+		}
+		if copied {
+			totalGenerated++
+			upstreamCount++
+			fmt.Printf("  %s -> %s (upstream)\n", entry.Name, skillFile)
+			continue
+		}
+
 		// Downgrade protection: don't overwrite an enriched skill with a registry-only one.
 		// This prevents CI (where CLIs aren't installed) from replacing locally-enriched skills.
 		if !isEnriched {
@@ -220,7 +236,7 @@ func main() {
 		fmt.Printf("  %s -> %s (%s)\n", entry.Name, skillFile, status)
 	}
 
-	summary := fmt.Sprintf("\nGenerated %d skills (%d enriched, %d registry-only", totalGenerated, enrichedCount, registryOnlyCount)
+	summary := fmt.Sprintf("\nGenerated %d skills (%d upstream, %d enriched, %d registry-only", totalGenerated, upstreamCount, enrichedCount, registryOnlyCount)
 	if skippedCount > 0 {
 		summary += fmt.Sprintf(", %d skipped to preserve enrichment", skippedCount)
 	}
@@ -230,6 +246,27 @@ func main() {
 	// Bump plugin.json version if skill set changed
 	afterDirs := existingSkillDirs()
 	maybeUpdatePluginVersion(beforeDirs, afterDirs)
+}
+
+// copyUpstreamSkill copies <entryPath>/SKILL.md to skillFile if it exists.
+// Returns (true, nil) on successful copy, (false, nil) if no upstream SKILL.md,
+// (false, err) on filesystem errors.
+func copyUpstreamSkill(entryPath, skillDir, skillFile string) (bool, error) {
+	upstreamPath := filepath.Join(entryPath, "SKILL.md")
+	data, err := os.ReadFile(upstreamPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("read %s: %w", upstreamPath, err)
+	}
+	if err := os.MkdirAll(skillDir, 0755); err != nil {
+		return false, fmt.Errorf("mkdir %s: %w", skillDir, err)
+	}
+	if err := os.WriteFile(skillFile, data, 0644); err != nil {
+		return false, fmt.Errorf("write %s: %w", skillFile, err)
+	}
+	return true, nil
 }
 
 // resolveCLIBinary resolves the CLI binary name using layered precedence:
