@@ -12,19 +12,14 @@ Skip the manual install. The library ships as a Claude Code plugin with a single
 
 ### Install
 
-If you already have the `cli-printing-press` marketplace, install the library plugin directly:
-
 ```
-/plugin install cli-printing-press@printing-press-library
-/reload-plugins
+/install mvanhorn/printing-press-library
 ```
 
-If not, add the marketplace first:
+Want to generate your own CLIs from API specs? Install the [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press) plugin too:
 
 ```
-/plugin marketplace add mvanhorn/cli-printing-press
-/plugin install cli-printing-press@printing-press-library
-/reload-plugins
+/install mvanhorn/cli-printing-press
 ```
 
 ### Usage
