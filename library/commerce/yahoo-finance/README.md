@@ -108,10 +108,6 @@ These capabilities aren't available in any other Yahoo Finance CLI, library, or 
 - **Adaptive rate limiter** — starts conservative, ramps up on success, halves on 429, persists the ceiling per-session.
 - **Automatic crumb bootstrap** — the fc.yahoo.com → getcrumb handshake every working wrapper does, built-in and cached to disk for 24 hours.
 
-## Usage
-
-<!-- HELP_OUTPUT -->
-
 ## Commands
 
 ### autocomplete
@@ -180,19 +176,19 @@ Trending symbols by region
 
 ```bash
 # Human-readable table (default in terminal, JSON when piped)
-yahoo-finance-pp-cli autocomplete list
+yahoo-finance-pp-cli quote AAPL MSFT NVDA
 
 # JSON for scripting and agents
-yahoo-finance-pp-cli autocomplete list --json
+yahoo-finance-pp-cli quote AAPL --json
 
 # Filter to specific fields
-yahoo-finance-pp-cli autocomplete list --json --select id,name,status
+yahoo-finance-pp-cli quote AAPL --json --select symbol,price,change
 
 # Dry run — show the request without sending
-yahoo-finance-pp-cli autocomplete list --dry-run
+yahoo-finance-pp-cli quote AAPL --dry-run
 
 # Agent mode — JSON + compact + no prompts in one flag
-yahoo-finance-pp-cli autocomplete list --agent
+yahoo-finance-pp-cli quote AAPL --agent
 ```
 
 ## Agent Usage
@@ -236,43 +232,15 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-## Cookbook
-
-Common workflows and recipes:
-
-```bash
-# List resources as JSON for scripting
-yahoo-finance-pp-cli autocomplete list --json
-
-# Filter to specific fields
-yahoo-finance-pp-cli autocomplete list --json --select id,name,status
-
-# Dry run to preview the request
-yahoo-finance-pp-cli autocomplete list --dry-run
-
-# Sync data locally for offline search
-yahoo-finance-pp-cli sync
-
-# Search synced data
-yahoo-finance-pp-cli search "query"
-
-# Export for backup
-yahoo-finance-pp-cli export --format jsonl > backup.jsonl
-```
-
 ## Health Check
 
 ```bash
 yahoo-finance-pp-cli doctor
 ```
 
-<!-- DOCTOR_OUTPUT -->
-
 ## Configuration
 
-Config file: `~/.config/yahoo-finance-pp-cli/config.toml`
-
-Environment variables:
+Config file: `~/.config/yahoo-finance-pp-cli/config.toml`. No environment variables are required — Yahoo Finance has no API key. Imported Chrome sessions are persisted at `~/.config/yahoo-finance-pp-cli/session.json`.
 
 ## Troubleshooting
 
