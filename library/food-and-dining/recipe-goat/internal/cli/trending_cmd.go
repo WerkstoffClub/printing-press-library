@@ -27,7 +27,7 @@ func newTrendingCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "trending",
 		Short:   "Show the top recipes currently featured on each site's homepage",
-		Example: "  recipe-goat-pp-cli trending --site budgetbytes,food52 --limit 5",
+		Example: "  recipe-goat-pp-cli trending --site budgetbytes,recipetineats --limit 5",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sites := siteHostsFromCSV(siteFilter)
 			client := httpClientForSites(flags.timeout)

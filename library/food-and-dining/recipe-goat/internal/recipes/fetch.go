@@ -107,10 +107,11 @@ func FetchHTML(ctx context.Context, client *http.Client, target string) ([]byte,
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusPaymentRequired || resp.StatusCode == http.StatusTooManyRequests {
-		_ = resp.Body.Close()
-		if archiveBody, archiveErr := fetchArchiveFallback(ctx, client, target); archiveErr == nil {
-			return archiveBody, nil
-		}
+		// FetchHTML is used by search/trending fan-out — per-site listing
+		// pages that are poorly covered by archive.org anyway (dynamic URLs,
+		// sparse snapshots). Skipping the fallback here preserves the
+		// archive.org request budget for URL-targeted Fetch calls where
+		// the user explicitly wants that specific recipe.
 		return nil, fmt.Errorf("%w: %s returned HTTP %d", ErrBlocked, target, resp.StatusCode)
 	}
 	if resp.StatusCode >= 400 {

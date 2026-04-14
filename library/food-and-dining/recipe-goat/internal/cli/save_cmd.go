@@ -20,7 +20,7 @@ func newSaveCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "save <url>",
 		Short:   "Save a recipe to the local cookbook",
-		Example: "  recipe-goat-pp-cli save https://www.food52.com/recipes/chicken-paprikash --tags weeknight",
+		Example: "  recipe-goat-pp-cli save https://www.recipetineats.com/crispy-chinese-pork-belly/ --tags weeknight",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var urls []string

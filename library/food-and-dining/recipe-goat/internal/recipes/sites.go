@@ -21,48 +21,81 @@ type Site struct {
 }
 
 // Sites is the built-in registry of recipe sources.
+//
+// Curation principle: the list optimizes for sites that reliably return
+// content to a Go HTTP client, not for sites with the highest traffic.
+// Mass-media-conglomerate sites that serve Cloudflare/Akamai bot
+// challenges (Dotdash Meredith, WBD, some Condé Nast properties) are
+// intentionally excluded from fan-out — users who want specific recipes
+// from those sites can still pass the URL to `recipe get`, which falls
+// back to archive.org when the live fetch is blocked.
+//
+// Removed from earlier versions: Food52, Food Network, Allrecipes,
+// Simply Recipes, EatingWell — all structurally blocked (403/429)
+// during testing in April 2026. Each has at least one comparable
+// replacement in the current list:
+//   - Food52 (editorial) → Bon Appétit, BBC Food
+//   - Food Network (celebrity chef) → chef-brand sites, BBC Food
+//   - Allrecipes (crowd-reviewed generic) → The Cozy Cook, Budget Bytes
+//   - Simply Recipes (generalist) → The Cozy Cook
+//   - EatingWell (healthy weeknight) → Skinnytaste
 var Sites = []Site{
-	// Tier 1 (trust 0.9)
+	// Tier 1 — independent, high-authority, reliably reachable.
 	{Name: "King Arthur Baking", Hostname: "kingarthurbaking.com", Tier: 1, SearchURL: "https://www.kingarthurbaking.com/search?f%5B0%5D=content_type%3Arecipe&q={q}", Trust: 0.9},
 	{Name: "Budget Bytes", Hostname: "budgetbytes.com", Tier: 1, SearchURL: "https://www.budgetbytes.com/?s={q}", Trust: 0.9},
 	{Name: "Smitten Kitchen", Hostname: "smittenkitchen.com", Tier: 1, SearchURL: "https://smittenkitchen.com/?s={q}", Trust: 0.9},
-	{Name: "Food52", Hostname: "food52.com", Tier: 1, SearchURL: "https://food52.com/recipes/search?q={q}", Trust: 0.9},
 	{Name: "BBC Good Food", Hostname: "bbcgoodfood.com", Tier: 1, SearchURL: "https://www.bbcgoodfood.com/search?q={q}", Trust: 0.9},
+	{Name: "BBC Food", Hostname: "bbc.co.uk", Tier: 1, SearchURL: "https://www.bbc.co.uk/food/search?q={q}", Trust: 0.9},
 	{Name: "Minimalist Baker", Hostname: "minimalistbaker.com", Tier: 1, SearchURL: "https://minimalistbaker.com/?s={q}", Trust: 0.9},
 	{Name: "Skinnytaste", Hostname: "skinnytaste.com", Tier: 1, SearchURL: "https://www.skinnytaste.com/?s={q}", Trust: 0.9},
 	{Name: "The Kitchn", Hostname: "thekitchn.com", Tier: 1, SearchURL: "https://www.thekitchn.com/search?q={q}", Trust: 0.9},
-	{Name: "Food Network", Hostname: "foodnetwork.com", Tier: 1, SearchURL: "https://www.foodnetwork.com/search/{q}-", Trust: 0.9},
+	{Name: "RecipeTin Eats", Hostname: "recipetineats.com", Tier: 1, SearchURL: "https://www.recipetineats.com/?s={q}", Trust: 0.9},
+	{Name: "The Woks of Life", Hostname: "thewoksoflife.com", Tier: 1, SearchURL: "https://thewoksoflife.com/?s={q}", Trust: 0.9},
+	{Name: "Just One Cookbook", Hostname: "justonecookbook.com", Tier: 1, SearchURL: "https://www.justonecookbook.com/?s={q}", Trust: 0.9},
+	{Name: "The Cozy Cook", Hostname: "thecozycook.com", Tier: 1, SearchURL: "https://thecozycook.com/?s={q}", Trust: 0.9},
 
-	// Tier 2 (trust 0.8)
+	// Tier 2 — brand/editorial authority, generally reachable but fragile
+	// (Condé Nast properties have started gating in recent quarters).
 	{Name: "Bon Appétit", Hostname: "bonappetit.com", Tier: 2, SearchURL: "https://www.bonappetit.com/search?q={q}", Trust: 0.8},
 	{Name: "Epicurious", Hostname: "epicurious.com", Tier: 2, SearchURL: "https://www.epicurious.com/search/{q}", Trust: 0.8},
+	{Name: "Gaz Oakley", Hostname: "gazoakleychef.com", Tier: 2, SearchURL: "https://www.gazoakleychef.com/?s={q}", Trust: 0.8},
 
-	// Tier 3 (trust 0.95 content, low reachability)
-	{Name: "Allrecipes", Hostname: "allrecipes.com", Tier: 3, SearchURL: "https://www.allrecipes.com/search?q={q}", Trust: 0.95},
-	{Name: "Simply Recipes", Hostname: "simplyrecipes.com", Tier: 3, SearchURL: "https://www.simplyrecipes.com/search?q={q}", Trust: 0.95},
-	{Name: "EatingWell", Hostname: "eatingwell.com", Tier: 3, SearchURL: "https://www.eatingwell.com/search?q={q}", Trust: 0.95},
+	// Tier 3 — high content trust but intermittent reachability; kept here
+	// because they still resolve today. Drop to opt-in if they start blocking.
 	{Name: "Serious Eats", Hostname: "seriouseats.com", Tier: 3, SearchURL: "https://www.seriouseats.com/search?q={q}", Trust: 0.95},
 }
 
 // recipeURLPatterns is a lookup of compiled per-host regexes for candidate
 // recipe-permalink paths. The Site.RecipeURLPattern field is populated from
 // this map at init() time. Keys are the Site.Hostname (www-stripped).
+// Patterns retained for removed sites (allrecipes, simplyrecipes,
+// eatingwell, foodnetwork, food52) so that users who pass those URLs to
+// `recipe get` still get correct site-level metadata (trust, tier).
+// They're just absent from Sites so fan-out skips them.
 var recipeURLPatterns = map[string]string{
 	"kingarthurbaking.com": `^/recipes/[a-z0-9-]+-recipe$`,
 	"budgetbytes.com":      `^/[a-z0-9-]{6,}/?$`,
 	"smittenkitchen.com":   `^/\d{4}/\d{2}/[a-z0-9-]+/?$`,
-	"food52.com":           `^/recipes/\d+-[a-z0-9-]+$`,
 	"bbcgoodfood.com":      `^/recipes/[a-z0-9-]+$`,
+	"bbc.co.uk":            `^/food/recipes/[a-z0-9_]+_\d+$`,
 	"minimalistbaker.com":  `^/[a-z0-9-]{6,}/?$`,
 	"skinnytaste.com":      `^/[a-z0-9-]{6,}/?$`,
 	"thekitchn.com":        `^/(?:.*-recipe-\d+|recipe-[a-z0-9-]+)$`,
-	"foodnetwork.com":      `^/recipes/[a-z0-9-/]+-recipe-\d+$`,
+	"recipetineats.com":    `^/[a-z0-9-]{6,}/?$`,
+	"thewoksoflife.com":    `^/[a-z0-9-]{6,}/?$`,
+	"justonecookbook.com":  `^/[a-z0-9-]{6,}/?$`,
+	"thecozycook.com":      `^/[a-z0-9-]{6,}/?$`,
+	"gazoakleychef.com":    `^/recipes/[a-z0-9-]+/?$`,
 	"bonappetit.com":       `^/recipe/[a-z0-9-]+$`,
 	"epicurious.com":       `^/recipes/food/views/[a-z0-9-]+$`,
-	"allrecipes.com":       `^/recipe/\d+/[a-z0-9-]+/?$`,
-	"simplyrecipes.com":    `^/(?:recipes/[a-z0-9_-]+/?|[a-z0-9-]+-recipe-\d+)$`,
-	"eatingwell.com":       `^/recipe/\d+/[a-z0-9-]+/?$`,
 	"seriouseats.com":      `^/[a-z0-9-]+-recipe(-\d+)?$`,
+
+	// Removed from fan-out but URLs still recognizable for `recipe get`:
+	"food52.com":        `^/recipes/\d+-[a-z0-9-]+$`,
+	"foodnetwork.com":   `^/recipes/[a-z0-9-/]+-recipe-\d+$`,
+	"allrecipes.com":    `^/recipe/\d+/[a-z0-9-]+/?$`,
+	"simplyrecipes.com": `^/(?:recipes/[a-z0-9_-]+/?|[a-z0-9-]+-recipe-\d+)$`,
+	"eatingwell.com":    `^/recipe/\d+/[a-z0-9-]+/?$`,
 }
 
 func init() {
@@ -129,6 +162,10 @@ var curatedAuthors = map[string]bool{
 	"beth moncel":                true,
 	"king arthur baking company": true,
 	"brian lagerstrom":           true,
+	"nagi maehashi":              true,
+	"namiko chen":                true,
+	"bill, judy, sarah, kaitlin": true,
+	"gaz oakley":                 true,
 }
 
 // AuthorTrust returns a trust score in [0,1] for the given author. Curated
