@@ -14,9 +14,23 @@ import (
 // site-level failure and continuing to other sources.
 var ErrBlocked = errors.New("site blocked")
 
-// chromeUA is a current-ish Chrome user agent. Many recipe sites 403 on Go's
+// ChromeUA is a current-ish Chrome user agent. Many recipe sites 403 on Go's
 // default UA, so sending a browser-looking UA is required for reach.
-const chromeUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+//
+// Freshness matters: some sites flag outdated Chrome versions as a scraper
+// heuristic (feedthepudge.com returned 403 on Chrome/131 but 200 on 140).
+// When this UA looks more than ~6 months stale relative to real Chrome
+// stable, bump it — stale UAs block sites that new UAs reach. This is a
+// machine-level concern the generator should automate eventually.
+//
+// Exported so doctor/health-check code can probe sites with the exact
+// same UA used for real Fetch() calls. Drift between the probe UA and
+// the real UA produces confusing results (site listed as "blocked" in
+// doctor but reachable during actual queries, or vice versa).
+const ChromeUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.56 Safari/537.36"
+
+// chromeUA is the unexported alias retained for intra-package use.
+const chromeUA = ChromeUA
 
 // Fetch downloads recipeURL (honoring ctx / redirects) and extracts the
 // JSON-LD Recipe from the response body. A 10s ctx deadline is applied if
@@ -47,6 +61,19 @@ func Fetch(ctx context.Context, client *http.Client, recipeURL string) (*Recipe,
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusPaymentRequired || resp.StatusCode == http.StatusTooManyRequests {
+		// Close the failing live response before attempting fallback —
+		// the deferred close would run at return, but we're about to
+		// make more requests and don't want this connection held open.
+		_ = resp.Body.Close()
+		if archiveBody, archiveErr := fetchArchiveFallback(ctx, client, recipeURL); archiveErr == nil {
+			r, parseErr := ParseJSONLD(archiveBody, recipeURL)
+			if parseErr == nil {
+				return r, nil
+			}
+			// Archive snapshot parsed badly — fall through to the
+			// original ErrBlocked rather than returning the parse error,
+			// since the user's real problem is the live block.
+		}
 		return nil, fmt.Errorf("%w: %s returned HTTP %d", ErrBlocked, recipeURL, resp.StatusCode)
 	}
 	if resp.StatusCode >= 400 {
@@ -94,6 +121,11 @@ func FetchHTML(ctx context.Context, client *http.Client, target string) ([]byte,
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusPaymentRequired || resp.StatusCode == http.StatusTooManyRequests {
+		// FetchHTML is used by search/trending fan-out — per-site listing
+		// pages that are poorly covered by archive.org anyway (dynamic URLs,
+		// sparse snapshots). Skipping the fallback here preserves the
+		// archive.org request budget for URL-targeted Fetch calls where
+		// the user explicitly wants that specific recipe.
 		return nil, fmt.Errorf("%w: %s returned HTTP %d", ErrBlocked, target, resp.StatusCode)
 	}
 	if resp.StatusCode >= 400 {
