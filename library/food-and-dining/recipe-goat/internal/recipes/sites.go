@@ -59,6 +59,11 @@ var Sites = []Site{
 	{Name: "Broma Bakery", Hostname: "bromabakery.com", Tier: 1, SearchURL: "https://bromabakery.com/?s={q}", Trust: 0.9},
 	{Name: "Bigger Bolder Baking", Hostname: "biggerbolderbaking.com", Tier: 1, SearchURL: "https://www.biggerbolderbaking.com/?s={q}", Trust: 0.9},
 	{Name: "The Cafe Sucre Farine", Hostname: "thecafesucrefarine.com", Tier: 1, SearchURL: "https://thecafesucrefarine.com/?s={q}", Trust: 0.9},
+	{Name: "China Sichuan Food", Hostname: "chinasichuanfood.com", Tier: 1, SearchURL: "https://www.chinasichuanfood.com/?s={q}", Trust: 0.9},
+	{Name: "Red House Spice", Hostname: "redhousespice.com", Tier: 1, SearchURL: "https://redhousespice.com/?s={q}", Trust: 0.9},
+	{Name: "My Heart Beets", Hostname: "myheartbeets.com", Tier: 1, SearchURL: "https://myheartbeets.com/?s={q}", Trust: 0.9},
+	{Name: "Indian Healthy Recipes", Hostname: "indianhealthyrecipes.com", Tier: 1, SearchURL: "https://www.indianhealthyrecipes.com/?s={q}", Trust: 0.9},
+	{Name: "Sip and Feast", Hostname: "sipandfeast.com", Tier: 1, SearchURL: "https://www.sipandfeast.com/?s={q}", Trust: 0.9},
 
 	// Tier 2 — brand/editorial authority, generally reachable but fragile
 	// (Condé Nast properties have started gating in recent quarters).
@@ -97,17 +102,29 @@ var recipeURLPatterns = map[string]string{
 	"bromabakery.com":           `^/[a-z0-9-]{6,}/?$`,
 	"biggerbolderbaking.com":    `^/[a-z0-9-]{6,}/?$`,
 	"thecafesucrefarine.com":    `^/[a-z0-9-]{6,}/?$`,
+	"chinasichuanfood.com":      `^/[a-z0-9-]{6,}/?$`,
+	"redhousespice.com":         `^/[a-z0-9-]{6,}/?$`,
+	"myheartbeets.com":          `^/[a-z0-9-]{6,}/?$`,
+	"indianhealthyrecipes.com":  `^/[a-z0-9-]{6,}/?$`,
+	"sipandfeast.com":           `^/[a-z0-9-]{6,}/?$`,
 	"gazoakleychef.com":         `^/recipes/[a-z0-9-]+/?$`,
 	"bonappetit.com":            `^/recipe/[a-z0-9-]+$`,
 	"epicurious.com":            `^/recipes/food/views/[a-z0-9-]+$`,
 	"seriouseats.com":           `^/[a-z0-9-]+-recipe(-\d+)?$`,
 
-	// Removed from fan-out but URLs still recognizable for `recipe get`:
-	"food52.com":        `^/recipes/\d+-[a-z0-9-]+$`,
-	"foodnetwork.com":   `^/recipes/[a-z0-9-/]+-recipe-\d+$`,
-	"allrecipes.com":    `^/recipe/\d+/[a-z0-9-]+/?$`,
-	"simplyrecipes.com": `^/(?:recipes/[a-z0-9_-]+/?|[a-z0-9-]+-recipe-\d+)$`,
-	"eatingwell.com":    `^/recipe/\d+/[a-z0-9-]+/?$`,
+	// Removed from fan-out but URLs still recognizable for `recipe get`.
+	// These sites either hard-block the search endpoint (Cloudflare on
+	// omnivorescookbook), hard-block live reads (dotdash properties), or
+	// ship client-rendered recipe pages (madewithlau, archanaskitchen —
+	// Next.js SPAs we can't parse from Go without a headless browser).
+	// Keeping the URL patterns means users who paste one of these URLs
+	// into `recipe get` still get correct site-level metadata.
+	"omnivorescookbook.com": `^/[a-z0-9-]{6,}/?$`,
+	"food52.com":            `^/recipes/\d+-[a-z0-9-]+$`,
+	"foodnetwork.com":       `^/recipes/[a-z0-9-/]+-recipe-\d+$`,
+	"allrecipes.com":        `^/recipe/\d+/[a-z0-9-]+/?$`,
+	"simplyrecipes.com":     `^/(?:recipes/[a-z0-9_-]+/?|[a-z0-9-]+-recipe-\d+)$`,
+	"eatingwell.com":        `^/recipe/\d+/[a-z0-9-]+/?$`,
 }
 
 func init() {
@@ -183,7 +200,13 @@ var curatedAuthors = map[string]bool{
 	"sarah fennel":               true,
 	"gemma stafford":             true,
 	"chris scheuer":              true,
-	"ken tran":                   true,
+	"swasthi":                    true,
+	"james delmage":              true,
+	// Note: Woks of Life (Kaitlin, Sarah, Bill, Judy) and Feed the Pudge
+	// (Ken) use single first names as bylines. Not added here — too
+	// collision-prone with uncurated authors on other sites. author_trust
+	// is only 20% of the score; Tier 1 site_trust (0.9) + ratings carry
+	// these sites fine.
 }
 
 // AuthorTrust returns a trust score in [0,1] for the given author. Curated
