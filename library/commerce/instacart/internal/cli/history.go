@@ -90,7 +90,7 @@ and the code fetches orders placed after the most recent known order.`,
 			if maxOrders < 0 {
 				maxOrders = 0
 			}
-			if cmd.Flags().Changed("max-orders") == false && maxOrders == 0 {
+			if !cmd.Flags().Changed("max-orders") && maxOrders == 0 {
 				maxOrders = 50 // first-run cap
 			}
 
