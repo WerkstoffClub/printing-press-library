@@ -344,3 +344,12 @@ yahoo-finance-pp-cli auth logout
 - [yfinance](https://github.com/ranaroussi/yfinance)
 - [yahoo-finance2](https://github.com/gadicc/yahoo-finance2)
 - [yahooquery](https://github.com/dpguthrie/yahooquery)
+
+<!-- pr-218-features -->
+## Agent workflow features
+
+This CLI was patched to add these agent-workflow capabilities (see [`printing-press patch`](https://github.com/mvanhorn/cli-printing-press/pull/221)):
+
+- **Named profiles** — save a set of flags under a name and reuse them: `yahoo-finance-pp-cli profile save <name> --<flag> <value>`, then `yahoo-finance-pp-cli --profile <name> <command>`. Flag precedence: explicit flag > env var > profile > default.
+- **`--deliver`** — route command output to a sink other than stdout. Values: `file:<path>` writes atomically via tmp+rename; `webhook:<url>` POSTs as JSON (or NDJSON with `--compact`).
+- **`feedback`** — record in-band feedback about the CLI. Entries append as JSON lines to `~/.yahoo-finance-pp-cli/feedback.jsonl`. When `YAHOO_FINANCE_FEEDBACK_ENDPOINT` is set and either `--send` is passed or `YAHOO_FINANCE_FEEDBACK_AUTO_SEND=true`, the entry is also POSTed upstream.
