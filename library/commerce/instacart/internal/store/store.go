@@ -23,6 +23,13 @@ func Open() (*Store, error) {
 		return nil, err
 	}
 	path := filepath.Join(dir, "instacart.db")
+	return OpenAt(path)
+}
+
+// OpenAt opens a Store at a specific path. Exposed for tests that need
+// isolation from the user's default ~/.config/instacart/instacart.db;
+// normal callers should use Open().
+func OpenAt(path string) (*Store, error) {
 	return openAt(path)
 }
 
