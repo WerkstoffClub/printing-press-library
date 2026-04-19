@@ -36,6 +36,7 @@ confidence is high, skips the live search entirely.`,
 	}
 	cmd.AddCommand(
 		newHistorySyncCmd(),
+		newHistoryImportCmd(),
 		newHistoryListCmd(),
 		newHistorySearchCmd(),
 		newHistoryStatsCmd(),
