@@ -22,7 +22,7 @@ func TestCopyUpstreamSkill_Present(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	skillDir := filepath.Join(tmp, "plugin", "skills", "pp-yahoo-finance")
+	skillDir := filepath.Join(tmp, "skills", "pp-yahoo-finance")
 	skillFile := filepath.Join(skillDir, "SKILL.md")
 
 	copied, err := copyUpstreamSkill(entryPath, skillDir, skillFile)
@@ -50,7 +50,7 @@ func TestCopyUpstreamSkill_Absent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	skillDir := filepath.Join(tmp, "plugin", "skills", "pp-no-upstream")
+	skillDir := filepath.Join(tmp, "skills", "pp-no-upstream")
 	skillFile := filepath.Join(skillDir, "SKILL.md")
 
 	copied, err := copyUpstreamSkill(entryPath, skillDir, skillFile)
@@ -80,7 +80,7 @@ func TestCopyUpstreamSkill_OverwritesExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	skillDir := filepath.Join(tmp, "plugin", "skills", "pp-yahoo-finance")
+	skillDir := filepath.Join(tmp, "skills", "pp-yahoo-finance")
 	if err := os.MkdirAll(skillDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestCopyUpstreamSkill_EmptyFallsThrough(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	skillDir := filepath.Join(tmp, "plugin", "skills", "pp-blank")
+	skillDir := filepath.Join(tmp, "skills", "pp-blank")
 	skillFile := filepath.Join(skillDir, "SKILL.md")
 
 	copied, err := copyUpstreamSkill(entryPath, skillDir, skillFile)
@@ -201,8 +201,8 @@ func buildTool(t *testing.T) string {
 // setupFixture writes a minimal working tree that main() expects:
 //   - registry.json at root
 //   - tools/generate-skills/skill-template.md (copied from the real template)
-//   - plugin/.claude-plugin/plugin.json (so version bump can run without a warning)
-//   - plugin/skills/ (output dir)
+//   - .claude-plugin/plugin.json (so version bump can run without a warning)
+//   - skills/ (output dir)
 func setupFixture(t *testing.T, root string, entries []RegistryEntry) {
 	t.Helper()
 
@@ -235,17 +235,8 @@ func setupFixture(t *testing.T, root string, entries []RegistryEntry) {
 		t.Fatal(err)
 	}
 
-	// Also copy the command-template.md so the command-shim emitter works.
-	cmdTmplSrc, err := os.ReadFile(filepath.Join(srcDir, "command-template.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmplDir, "command-template.md"), cmdTmplSrc, 0644); err != nil {
-		t.Fatal(err)
-	}
-
 	// Minimal plugin.json so the version-bump path doesn't warn.
-	pluginDir := filepath.Join(root, "plugin", ".claude-plugin")
+	pluginDir := filepath.Join(root, ".claude-plugin")
 	if err := os.MkdirAll(pluginDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -253,7 +244,7 @@ func setupFixture(t *testing.T, root string, entries []RegistryEntry) {
 		t.Fatal(err)
 	}
 
-	if err := os.MkdirAll(filepath.Join(root, "plugin", "skills"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "skills"), 0755); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -296,7 +287,7 @@ func TestIntegration_UpstreamPreferredOverSynthesis(t *testing.T) {
 	outStr := string(out)
 
 	// Upstream entry should be copied byte-for-byte.
-	upstreamSkill, err := os.ReadFile(filepath.Join(root, "plugin", "skills", "pp-with-upstream", "SKILL.md"))
+	upstreamSkill, err := os.ReadFile(filepath.Join(root, "skills", "pp-with-upstream", "SKILL.md"))
 	if err != nil {
 		t.Fatalf("reading upstream-copied skill: %v", err)
 	}
@@ -308,7 +299,7 @@ func TestIntegration_UpstreamPreferredOverSynthesis(t *testing.T) {
 	}
 
 	// Non-upstream entry should be synthesized from the template.
-	synthSkill, err := os.ReadFile(filepath.Join(root, "plugin", "skills", "pp-no-upstream", "SKILL.md"))
+	synthSkill, err := os.ReadFile(filepath.Join(root, "skills", "pp-no-upstream", "SKILL.md"))
 	if err != nil {
 		t.Fatalf("reading synthesized skill: %v", err)
 	}
@@ -346,7 +337,7 @@ func TestIntegration_UpstreamOverwritesStaleSynthesis(t *testing.T) {
 	setupFixture(t, root, entries)
 
 	// Pre-seed a stale synthesized skill.
-	staleDir := filepath.Join(root, "plugin", "skills", "pp-api")
+	staleDir := filepath.Join(root, "skills", "pp-api")
 	if err := os.MkdirAll(staleDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -379,93 +370,3 @@ func TestIntegration_UpstreamOverwritesStaleSynthesis(t *testing.T) {
 	}
 }
 
-func TestIntegration_CommandShimsWrittenForEverySkill(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in -short mode")
-	}
-	bin := buildTool(t)
-	root := t.TempDir()
-
-	entries := []RegistryEntry{
-		{Name: "with-upstream-pp-cli", Category: "commerce", API: "With Upstream",
-			Description: "Has upstream skill", Path: "library/commerce/with-upstream"},
-		{Name: "no-upstream-pp-cli", Category: "commerce", API: "No Upstream",
-			Description: "No upstream skill", Path: "library/commerce/no-upstream"},
-	}
-	setupFixture(t, root, entries)
-
-	upstreamDir := filepath.Join(root, "library", "commerce", "with-upstream")
-	if err := os.MkdirAll(upstreamDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(upstreamDir, "SKILL.md"),
-		[]byte("---\nname: pp-with-upstream\ndescription: \"u\"\n---\nbody\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(root, "library", "commerce", "no-upstream"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd := exec.Command(bin)
-	cmd.Dir = root
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("tool exited with error: %v\n%s", err, out)
-	}
-
-	// Both upstream and registry-only paths should emit a command shim.
-	wantCommands := []string{"pp-with-upstream.md", "pp-no-upstream.md"}
-	for _, name := range wantCommands {
-		cmdFile := filepath.Join(root, "plugin", "commands", name)
-		data, err := os.ReadFile(cmdFile)
-		if err != nil {
-			t.Errorf("command shim missing for %s: %v", name, err)
-			continue
-		}
-		body := string(data)
-		if !strings.Contains(body, "description:") {
-			t.Errorf("command %s missing description frontmatter:\n%s", name, body)
-		}
-		skillName := strings.TrimSuffix(name, ".md")
-		if !strings.Contains(body, "`"+skillName+"`") {
-			t.Errorf("command %s should reference its skill %q in body:\n%s", name, skillName, body)
-		}
-		if !strings.Contains(body, "$ARGUMENTS") {
-			t.Errorf("command %s should forward $ARGUMENTS:\n%s", name, body)
-		}
-	}
-}
-
-func TestIntegration_CommandShimIdempotent(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in -short mode")
-	}
-	bin := buildTool(t)
-	root := t.TempDir()
-
-	entries := []RegistryEntry{
-		{Name: "foo-pp-cli", Category: "commerce", API: "Foo",
-			Description: "foo", Path: "library/commerce/foo"},
-	}
-	setupFixture(t, root, entries)
-	if err := os.MkdirAll(filepath.Join(root, "library", "commerce", "foo"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	run := func() []byte {
-		cmd := exec.Command(bin)
-		cmd.Dir = root
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("tool exited with error: %v\n%s", err, out)
-		}
-		data, err := os.ReadFile(filepath.Join(root, "plugin", "commands", "pp-foo.md"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		return data
-	}
-	first := run()
-	second := run()
-	if string(first) != string(second) {
-		t.Errorf("command shim should be idempotent across runs\nfirst:\n%s\nsecond:\n%s", first, second)
-	}
-}
