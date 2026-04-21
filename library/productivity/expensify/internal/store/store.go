@@ -515,6 +515,10 @@ func buildExpenseFilter(f map[string]string) (string, []any) {
 		parts = append(parts, "policy_id = ?")
 		args = append(args, v)
 	}
+	if v := f["report_id"]; v != "" {
+		parts = append(parts, "report_id = ?")
+		args = append(args, v)
+	}
 	if v := f["since"]; v != "" {
 		parts = append(parts, "date >= ?")
 		args = append(args, v)

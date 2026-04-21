@@ -25,5 +25,6 @@ func newReportCmd(flags *rootFlags) *cobra.Command {
 	cmd.AddCommand(newReportSubmitCmd(flags))
 	// Novel subcommand
 	cmd.AddCommand(newReportDraftCmd(flags))
+	cmd.AddCommand(newReportConsolidateCmd(flags))
 	return cmd
 }
