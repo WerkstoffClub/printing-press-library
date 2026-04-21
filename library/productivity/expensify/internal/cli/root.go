@@ -5,6 +5,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,6 +39,7 @@ type rootFlags struct {
 	timeout      time.Duration
 	rateLimit    float64
 	dataSource   string
+	noAutoRetry  bool
 
 	// deliverBuf captures command output when --deliver is set to a
 	// non-stdout sink. Flushed to the sink after Execute returns.
@@ -98,6 +100,7 @@ See README.md or the bundled SKILL.md for recipes.`,
 	rootCmd.PersistentFlags().StringVar(&flags.profileName, "profile", "", "Apply values from a saved profile (see 'expensify-pp-cli profile list')")
 	rootCmd.PersistentFlags().StringVar(&flags.deliverSpec, "deliver", "", "Route output to a sink: stdout (default), file:<path>, webhook:<url>")
 	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 2, "Max requests per second (0 to disable, default 2 for sniffed APIs)")
+	rootCmd.PersistentFlags().BoolVar(&flags.noAutoRetry, "no-auto-retry", false, "Disable automatic re-authentication on session expiry")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if flags.deliverSpec != "" {
@@ -212,7 +215,29 @@ func (f *rootFlags) newClient() (*client.Client, error) {
 	c := client.New(cfg, f.timeout, f.rateLimit)
 	c.DryRun = f.dryRun
 	c.NoCache = f.noCache
+	// Wire up the auto-retry hook. RefreshAuth is a closure over cfg + a
+	// short-lived client that re-mints the session via /Authenticate. When
+	// --no-auto-retry is set, AutoRetryOnExpired stays false and the 407
+	// branch in client.do() is skipped even if RefreshAuth is non-nil.
+	c.RefreshAuth = buildRefreshAuthFn(cfg, f.timeout)
+	c.AutoRetryOnExpired = !f.noAutoRetry && c.RefreshAuth != nil
 	return c, nil
+}
+
+// buildRefreshAuthFn returns a closure that mints a fresh session authToken
+// via Expensify's /Authenticate endpoint, using the email stored in cfg +
+// the password retrieved from the OS keychain. Returns nil when no email is
+// configured — in that case auto-retry is inert and the 407 error surfaces
+// normally. When the closure runs and finds no password in the keychain, it
+// returns client.ErrHeadlessNotConfigured so the client can wrap the
+// original 407 with a helpful hint.
+func buildRefreshAuthFn(cfg *config.Config, timeout time.Duration) func(ctx context.Context) error {
+	if cfg == nil || cfg.ExpensifyEmail == "" {
+		return nil
+	}
+	return func(ctx context.Context) error {
+		return client.RefreshSessionToken(ctx, cfg, timeout)
+	}
 }
 
 func (f *rootFlags) printJSON(w *cobra.Command, v any) error {

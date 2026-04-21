@@ -138,6 +138,11 @@ func classifyAPIError(err error) error {
 		// 409 Conflict = resource already exists. For agents retrying creates, this is success.
 		fmt.Fprintln(os.Stderr, "already exists (no-op)")
 		return nil
+	case strings.Contains(msg, "auto-retry exhausted") || strings.Contains(msg, "jsonCode 407") || strings.Contains(msg, "HTTP 407"):
+		return authErr(fmt.Errorf("%w\nhint: session token expired. Refresh it with:"+
+			"\n      expensify-pp-cli auth login --headless   (uses stored credentials)"+
+			"\n      expensify-pp-cli auth login              (headed browser; needed for 2FA accounts)"+
+			"\n      expensify-pp-cli auth store-credentials  (first-time headless setup)", err))
 	case strings.Contains(msg, "HTTP 400") && looksLikeAuthError(msg):
 		return authErr(fmt.Errorf("%w\nhint: the API rejected the request — this usually means auth is missing or invalid."+
 			"\n      Set your API key: export EXPENSIFY_AUTH_TOKEN=<your-key>"+
@@ -145,8 +150,8 @@ func classifyAPIError(err error) error {
 			"\n      Run 'expensify-pp-cli doctor' to check auth status."+
 			"\n      Response: "+sanitizeErrorBody(msg), err))
 	case strings.Contains(msg, "HTTP 401"):
-		return authErr(fmt.Errorf("%w\nhint: check your API key."+
-			" Set it with: export EXPENSIFY_AUTH_TOKEN=<your-key>"+
+		return authErr(fmt.Errorf("%w\nhint: check your API key, or refresh your session with `expensify-pp-cli auth login --headless`."+
+			"\n      Set it with: export EXPENSIFY_AUTH_TOKEN=<your-key>"+
 			"\n      Get a key at: https://www.expensify.com/tools/integrations/"+
 			"\n      Run 'expensify-pp-cli doctor' to check auth status.", err))
 	case strings.Contains(msg, "HTTP 403"):

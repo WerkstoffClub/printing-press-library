@@ -5,9 +5,11 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -24,6 +26,12 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/productivity/expensify/internal/expensifysearch"
 )
 
+// ErrHeadlessNotConfigured is returned by a RefreshAuth callback when the CLI
+// has no stored email/password pair in the OS keychain. The client surfaces
+// the original 407 error wrapped with a hint pointing the user at
+// `auth store-credentials` + `auth login --headless`.
+var ErrHeadlessNotConfigured = errors.New("headless credentials not configured")
+
 type Client struct {
 	BaseURL    string
 	Config     *config.Config
@@ -32,6 +40,26 @@ type Client struct {
 	NoCache    bool
 	cacheDir   string
 	limiter    *adaptiveLimiter
+
+	// AutoRetryOnExpired enables the "one silent re-auth + retry" branch in
+	// do() when a request returns jsonCode 407 (session expired). The default
+	// is false; root.go flips this on at construction time when RefreshAuth is
+	// wired up and --no-auto-retry isn't set.
+	AutoRetryOnExpired bool
+
+	// RefreshAuth, when non-nil, is invoked after a 407 detection to mint a
+	// fresh session token. It should update c.Config.ExpensifyAuthToken and
+	// persist the new session. Returning ErrHeadlessNotConfigured tells the
+	// client to surface the original 407 with an actionable hint; any other
+	// error is wrapped into the retry-failure message.
+	RefreshAuth func(ctx context.Context) error
+
+	// refreshMu serializes concurrent re-auth attempts so three goroutines
+	// racing on 407 don't all mint new tokens. After acquiring, callers
+	// re-check c.Config.ExpensifyAuthToken against the token that was
+	// in-flight when they hit 407 — if it's changed, another request already
+	// refreshed and we skip the RefreshAuth call.
+	refreshMu sync.Mutex
 }
 
 // adaptiveLimiter provides proactive rate limiting with adaptive ceiling discovery.
@@ -297,6 +325,11 @@ func (c *Client) do(method, path string, params map[string]string, body any, hea
 	const maxRetries = 3
 	var lastErr error
 
+	// retriedExpired tracks whether this top-level do() call already spent its
+	// one 407 re-auth attempt. Session-expiry retry is ONE-SHOT: a second 407
+	// after a successful refresh surfaces immediately.
+	retriedExpired := false
+
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Proactive rate limiting — wait before sending
 		c.limiter.Wait()
@@ -342,8 +375,33 @@ func (c *Client) do(method, path string, params map[string]string, body any, hea
 		}
 		respBody = sanitizeJSONResponse(respBody)
 
-		// Success
+		// Success at the HTTP layer — but Expensify returns HTTP 200 with a
+		// jsonCode field in the body. A jsonCode of 407 means "session
+		// expired" and we want one silent re-auth + retry if auto-retry is
+		// configured.
 		if resp.StatusCode < 400 {
+			expired := isExpiredJSONCode(respBody)
+			if expired && c.AutoRetryOnExpired && c.RefreshAuth != nil && !retriedExpired {
+				// Attempt one re-auth. The helper rebuilds the request body
+				// with the freshly-minted authToken (by rebuilding via
+				// buildExpensifyRequest, which reads c.Config).
+				newURL, newBody, err := c.attemptExpiryRefresh(method, path, body, respBody)
+				if err != nil {
+					return nil, 0, err
+				}
+				retriedExpired = true
+				targetURL = newURL
+				bodyBytes = newBody
+				// Don't bump attempt counter — the session-expiry branch
+				// doesn't interact with the 429/5xx retry budget.
+				continue
+			}
+			if expired && retriedExpired {
+				// The second attempt ALSO returned 407: the fresh token is
+				// still being rejected (account locked? partner-password
+				// drift?). Surface this without a third attempt.
+				return nil, resp.StatusCode, fmt.Errorf("auto-retry exhausted: session still expired after re-auth (%s %s jsonCode 407: %s)", method, path, truncateBody(respBody))
+			}
 			c.limiter.OnSuccess()
 			return json.RawMessage(respBody), resp.StatusCode, nil
 		}
@@ -374,11 +432,102 @@ func (c *Client) do(method, path string, params map[string]string, body any, hea
 			continue
 		}
 
+		// HTTP 401/403 fallback: some intermediaries (Cloudflare, CDN) may
+		// return a raw 401/403 with an HTML body instead of the dispatcher's
+		// JSON envelope. Treat that as expiry when auto-retry is configured
+		// and we haven't already retried.
+		if (resp.StatusCode == 401 || resp.StatusCode == 403) && c.AutoRetryOnExpired && c.RefreshAuth != nil && !retriedExpired && !isJSONBody(respBody) {
+			newURL, newBody, rerr := c.attemptExpiryRefresh(method, path, body, respBody)
+			if rerr != nil {
+				return nil, 0, rerr
+			}
+			retriedExpired = true
+			targetURL = newURL
+			bodyBytes = newBody
+			continue
+		}
+
 		// Client error or retries exhausted - return the error
 		return nil, resp.StatusCode, apiErr
 	}
 
 	return nil, 0, lastErr
+}
+
+// isExpiredJSONCode reports whether the response body parses as JSON and has a
+// top-level `jsonCode` of 407 (session expired). Returns false for non-JSON
+// bodies (HTML error pages, empty, etc.) — the HTTP-status fallback handles
+// those separately.
+func isExpiredJSONCode(body []byte) bool {
+	if !isJSONBody(body) {
+		return false
+	}
+	var env struct {
+		JSONCode int `json:"jsonCode"`
+	}
+	if err := json.Unmarshal(body, &env); err != nil {
+		return false
+	}
+	return env.JSONCode == 407
+}
+
+// isJSONBody performs a cheap check — does the body start with `{` or `[`
+// after whitespace? The sanitize step already stripped BOM / XSSI prefixes.
+func isJSONBody(body []byte) bool {
+	trimmed := bytes.TrimLeft(body, " \t\r\n")
+	if len(trimmed) == 0 {
+		return false
+	}
+	return trimmed[0] == '{' || trimmed[0] == '['
+}
+
+// attemptExpiryRefresh calls RefreshAuth under the refresh mutex, with
+// token-change detection so concurrent callers racing on 407 don't all mint
+// new tokens. On success, rebuilds the request body so the next attempt uses
+// the fresh authToken. Returns the original response wrapped with an
+// actionable hint when RefreshAuth returns ErrHeadlessNotConfigured, or a
+// combined error when RefreshAuth fails for other reasons.
+func (c *Client) attemptExpiryRefresh(method, path string, body any, origBody []byte) (string, []byte, error) {
+	// Snapshot the token as it was when we hit 407. If another goroutine
+	// refreshes while we're waiting on the mutex, our snapshot will differ
+	// from the now-current config token and we skip the RefreshAuth call.
+	var tokenBefore string
+	if c.Config != nil {
+		tokenBefore = c.Config.ExpensifyAuthToken
+	}
+
+	c.refreshMu.Lock()
+	var tokenAfter string
+	if c.Config != nil {
+		tokenAfter = c.Config.ExpensifyAuthToken
+	}
+	if tokenAfter != "" && tokenAfter != tokenBefore {
+		// Another concurrent request already refreshed — skip the RefreshAuth
+		// call and use the new token for the retry.
+		c.refreshMu.Unlock()
+	} else {
+		refreshErr := c.RefreshAuth(context.Background())
+		c.refreshMu.Unlock()
+		if refreshErr != nil {
+			origErr := &APIError{
+				Method:     method,
+				Path:       path,
+				StatusCode: 407,
+				Body:       truncateBody(origBody),
+			}
+			if errors.Is(refreshErr, ErrHeadlessNotConfigured) {
+				return "", nil, fmt.Errorf("%w\nhint: Run `expensify-pp-cli auth store-credentials` + `auth login --headless` to enable auto-retry, or re-run `auth login` to refresh manually.", origErr)
+			}
+			return "", nil, fmt.Errorf("session expired AND re-auth failed: %w (original: %v)", refreshErr, origErr)
+		}
+	}
+
+	// Rebuild the request with the fresh authToken from c.Config.
+	newURL, newBody, _, err := c.buildExpensifyRequest(method, path, body)
+	if err != nil {
+		return "", nil, fmt.Errorf("rebuilding request after refresh: %w", err)
+	}
+	return newURL, newBody, nil
 }
 
 // dryRun prints the outgoing request exactly as the live path would send it,

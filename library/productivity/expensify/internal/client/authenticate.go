@@ -40,6 +40,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,6 +50,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mvanhorn/printing-press-library/library/productivity/expensify/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/productivity/expensify/internal/credentials"
 )
 
 const (
@@ -207,6 +211,48 @@ func looksLikeTwoFactor(message string) bool {
 		strings.Contains(lower, "two factor") ||
 		strings.Contains(lower, "two-factor") ||
 		strings.Contains(lower, "2fa")
+}
+
+// RefreshSessionToken mints a fresh session authToken for cfg's email, using
+// the password retrieved from the OS keychain. On success the new token,
+// email, and accountID are persisted via cfg.SaveSession. Returns
+// ErrHeadlessNotConfigured when no email is set or no password is stored for
+// that email — callers (like the auto-retry branch in do()) use this to
+// distinguish "configure auth first" from "auth failed outright".
+//
+// The passed context is accepted for API symmetry with future cancellation
+// work; the underlying http.Client timeout still governs the call.
+func RefreshSessionToken(_ context.Context, cfg *config.Config, timeout time.Duration) error {
+	if cfg == nil || cfg.ExpensifyEmail == "" {
+		return ErrHeadlessNotConfigured
+	}
+	password, err := credentials.Get(cfg.ExpensifyEmail)
+	if err != nil {
+		if errors.Is(err, credentials.ErrNotFound) {
+			return ErrHeadlessNotConfigured
+		}
+		return fmt.Errorf("reading keychain for %s: %w", cfg.ExpensifyEmail, err)
+	}
+
+	// Build a standalone client for the /Authenticate call. Not sharing the
+	// caller's Client keeps RefreshAuth / AutoRetryOnExpired off the refresh
+	// path — a refresh that itself hit 407 can't re-enter the retry branch.
+	refresher := &Client{
+		BaseURL:    strings.TrimRight(cfg.BaseURL, "/"),
+		Config:     cfg,
+		HTTPClient: &http.Client{Timeout: timeout},
+	}
+	result, err := refresher.Authenticate(cfg.ExpensifyEmail, password)
+	if err != nil {
+		return err
+	}
+	if result.AuthToken == "" {
+		return ErrAuthenticateMissing
+	}
+	if err := cfg.SaveSession(result.AuthToken, cfg.ExpensifyEmail, result.AccountID); err != nil {
+		return fmt.Errorf("saving refreshed session: %w", err)
+	}
+	return nil
 }
 
 // parseExpires tries unix-seconds-as-number first, then ISO-8601-as-string.
