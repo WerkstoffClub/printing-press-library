@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -25,40 +26,63 @@ import (
 // the user through registering a PH OAuth app and persisting an app-level
 // access token via client_credentials exchange.
 func newAuthRegisterCmd(flags *rootFlags) *cobra.Command {
-	var clientIDFlag, clientSecretFlag string
+	var clientIDFlag, clientSecretFlag, clientIDEnvFlag, clientSecretEnvFlag string
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "Register a Product Hunt OAuth app and store the access token",
 		Long: `Register a Product Hunt OAuth application and exchange its credentials for an
 app-level access token via the client_credentials grant.
 
-You register the app once at https://www.producthunt.com/v2/oauth/applications
-and paste the client ID and secret below. The CLI exchanges those for an
-access token and saves it (along with the client id and secret for later
-refreshes) to the TOML config file with 0600 permissions.
+	Register the app once at https://www.producthunt.com/v2/oauth/applications:
+
+	  Name: producthunt-pp-cli (or any recognizable local name)
+	  Redirect URI: https://localhost/callback
+
+	Then paste the API Key as client_id and API Secret as client_secret below.
+	The CLI exchanges those for an access token and saves it (along with the
+	client id and secret for later refreshes) to the TOML config file with 0600
+	permissions.
 
 Atom-runtime commands (sync, recent, today, list, search, etc.) do NOT use
 this token — they hit the public /feed endpoint and need no auth. This
 command unlocks Tier 2 (search --enrich) and Tier 3 (backfill) features.
 
-Interactive mode reads the client ID and secret from stdin. Non-interactive
-mode accepts them via --client-id and --client-secret flags; useful for CI
-and scripted installs.`,
+	Interactive mode reads the client ID and secret from stdin. Agent/CI mode can
+	read PRODUCTHUNT_CLIENT_ID and PRODUCTHUNT_CLIENT_SECRET, or explicit env var
+	names via --client-id-env and --client-secret-env. Passing secrets as flags is
+	supported but less safe because shell history may retain them.`,
 		Example: `  # Interactive (recommended): paste values when prompted
   producthunt-pp-cli auth register
 
-  # Non-interactive: supply both up front
-  producthunt-pp-cli auth register --client-id CID --client-secret CS`,
+  # Agent-friendly: read credentials from environment
+  PRODUCTHUNT_CLIENT_ID=... PRODUCTHUNT_CLIENT_SECRET=... producthunt-pp-cli auth register --no-input
+
+  # Explicit env var names
+  producthunt-pp-cli auth register --no-input --client-id-env PH_ID --client-secret-env PH_SECRET`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAuthRegister(cmd, flags, clientIDFlag, clientSecretFlag)
+			return runAuthRegister(cmd, flags, authRegisterInputs{
+				ClientID:        clientIDFlag,
+				ClientSecret:    clientSecretFlag,
+				ClientIDEnv:     clientIDEnvFlag,
+				ClientSecretEnv: clientSecretEnvFlag,
+			})
 		},
 	}
 	cmd.Flags().StringVar(&clientIDFlag, "client-id", "", "PH OAuth app client ID (non-interactive mode)")
 	cmd.Flags().StringVar(&clientSecretFlag, "client-secret", "", "PH OAuth app client secret (non-interactive mode)")
+	cmd.Flags().StringVar(&clientIDEnvFlag, "client-id-env", "PRODUCTHUNT_CLIENT_ID", "Environment variable containing PH OAuth app client ID")
+	cmd.Flags().StringVar(&clientSecretEnvFlag, "client-secret-env", "PRODUCTHUNT_CLIENT_SECRET", "Environment variable containing PH OAuth app client secret")
 	return cmd
 }
 
-func runAuthRegister(cmd *cobra.Command, flags *rootFlags, clientIDFlag, clientSecretFlag string) error {
+type authRegisterInputs struct {
+	ClientID        string
+	ClientSecret    string
+	ClientIDEnv     string
+	ClientSecretEnv string
+}
+
+func runAuthRegister(cmd *cobra.Command, flags *rootFlags, inputs authRegisterInputs) error {
 	cfg, err := config.Load(flags.configPath)
 	if err != nil {
 		return configErr(err)
@@ -69,16 +93,25 @@ func runAuthRegister(cmd *cobra.Command, flags *rootFlags, clientIDFlag, clientS
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "1. Open this URL in your browser:")
 	fmt.Fprintln(w, "     https://www.producthunt.com/v2/oauth/applications")
-	fmt.Fprintln(w, "2. Click 'New application', give it any name, redirect_uri can be a placeholder.")
-	fmt.Fprintln(w, "3. Paste the API Key (client_id) and API Secret (client_secret) below.")
+	fmt.Fprintln(w, "2. Click 'New application'.")
+	fmt.Fprintln(w, "3. Fill in:")
+	fmt.Fprintln(w, "     Name: producthunt-pp-cli")
+	fmt.Fprintln(w, "     Redirect URI: https://localhost/callback")
+	fmt.Fprintln(w, "4. Paste the API Key (client_id) and API Secret (client_secret) below.")
 	fmt.Fprintln(w, "")
 
-	clientID := clientIDFlag
-	clientSecret := clientSecretFlag
+	clientID := strings.TrimSpace(inputs.ClientID)
+	clientSecret := strings.TrimSpace(inputs.ClientSecret)
+	if clientID == "" && inputs.ClientIDEnv != "" {
+		clientID = strings.TrimSpace(os.Getenv(inputs.ClientIDEnv))
+	}
+	if clientSecret == "" && inputs.ClientSecretEnv != "" {
+		clientSecret = strings.TrimSpace(os.Getenv(inputs.ClientSecretEnv))
+	}
 
 	if clientID == "" {
 		if flags.noInput {
-			return usageErr(fmt.Errorf("--no-input set but --client-id not supplied"))
+			return usageErr(fmt.Errorf("--no-input set but no client ID supplied; set %s or pass --client-id", inputs.ClientIDEnv))
 		}
 		v, err := readLineFromStdin(cmd, "Client ID: ")
 		if err != nil {
@@ -92,7 +125,7 @@ func runAuthRegister(cmd *cobra.Command, flags *rootFlags, clientIDFlag, clientS
 
 	if clientSecret == "" {
 		if flags.noInput {
-			return usageErr(fmt.Errorf("--no-input set but --client-secret not supplied"))
+			return usageErr(fmt.Errorf("--no-input set but no client secret supplied; set %s or pass --client-secret", inputs.ClientSecretEnv))
 		}
 		v, err := readSecretFromStdin(cmd, "Client Secret (no echo): ")
 		if err != nil {

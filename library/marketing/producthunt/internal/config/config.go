@@ -28,14 +28,14 @@ type Config struct {
 	// feed before serving a query. Default true. Integrators that prefer
 	// hand-managed warmth can set this to false via `producthunt-pp-cli
 	// config set auto_sync false` (or by editing the TOML directly).
-	AutoSync    *bool `toml:"auto_sync"`
+	AutoSync *bool `toml:"auto_sync"`
 
 	// AutoEnrich controls whether `search` calls GraphQL on thin local
-	// results without requiring the --enrich flag each time. Requires
-	// AuthType == "oauth". Default false — enrichment is opt-in.
-	AutoEnrich  bool  `toml:"auto_enrich"`
+	// results without requiring the --enrich flag each time. Requires a
+	// Product Hunt GraphQL token. Default false — enrichment is opt-in.
+	AutoEnrich bool `toml:"auto_enrich"`
 
-	Path          string    `toml:"-"`
+	Path string `toml:"-"`
 }
 
 // AutoSyncEnabled returns true when read commands should run auto-sync.
@@ -47,10 +47,35 @@ func (c *Config) AutoSyncEnabled() bool {
 	return *c.AutoSync
 }
 
-// HasOAuth reports whether OAuth credentials are configured. Tier 2/3
-// features (backfill, search --enrich) silently skip when this is false.
+// HasGraphQLToken reports whether Product Hunt GraphQL reads can be attempted.
+// Both OAuth client-credentials tokens and dashboard developer tokens are valid
+// for the public read-only GraphQL fields this CLI uses.
+func (c *Config) HasGraphQLToken() bool {
+	return c != nil && c.AccessToken != "" && c.AuthType != "none"
+}
+
+// HasOAuth reports whether OAuth credentials are configured. Kept for older
+// call sites; new Product Hunt code should prefer HasGraphQLToken because a
+// developer token unlocks the same public GraphQL read path.
 func (c *Config) HasOAuth() bool {
-	return c.AuthType == "oauth" && c.AccessToken != ""
+	return c != nil && c.AuthType == "oauth" && c.AccessToken != ""
+}
+
+func (c *Config) GraphQLAuthMode() string {
+	if !c.HasGraphQLToken() {
+		return "atom_only"
+	}
+	switch c.AuthType {
+	case "oauth":
+		return "oauth_client_credentials"
+	case "developer_token", "graphql_token":
+		return c.AuthType
+	case "":
+		// Backward-compatible with tokens saved before auth_type was set.
+		return "graphql_token"
+	default:
+		return c.AuthType
+	}
 }
 
 func Load(configPath string) (*Config, error) {
@@ -78,6 +103,11 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// Env var overrides
+	if v := firstEnv("PRODUCTHUNT_GRAPHQL_TOKEN", "PRODUCTHUNT_DEVELOPER_TOKEN", "PRODUCTHUNT_API_TOKEN"); v != "" {
+		cfg.AccessToken = v
+		cfg.AuthType = "developer_token"
+		cfg.AuthSource = "env"
+	}
 
 	// Base URL override (used by printing-press verify to point at mock/test servers)
 	if v := os.Getenv("PRODUCTHUNT_BASE_URL"); v != "" {
@@ -112,12 +142,25 @@ func (c *Config) SaveTokens(clientID, clientSecret, accessToken, refreshToken st
 	c.AccessToken = accessToken
 	c.RefreshToken = refreshToken
 	c.TokenExpiry = expiry
+	if accessToken != "" && c.AuthType == "" {
+		c.AuthType = "graphql_token"
+	}
+	return c.save()
+}
+
+func (c *Config) SaveGraphQLToken(accessToken string) error {
+	c.AuthType = "developer_token"
+	c.ClientID = ""
+	c.ClientSecret = ""
+	c.AccessToken = accessToken
+	c.RefreshToken = ""
+	c.TokenExpiry = time.Time{}
 	return c.save()
 }
 
 // SaveOAuth persists OAuth app credentials and the access token obtained via
 // client_credentials exchange. Sets AuthType = "oauth" so downstream code
-// (HasOAuth, backfill gate) can see the store is authenticated.
+// (HasGraphQLToken, backfill gate) can see the store is authenticated.
 func (c *Config) SaveOAuth(clientID, clientSecret, accessToken string, expiry time.Time) error {
 	c.AuthType = "oauth"
 	c.ClientID = clientID
@@ -133,6 +176,8 @@ func (c *Config) ClearTokens() error {
 	c.AccessToken = ""
 	c.RefreshToken = ""
 	c.TokenExpiry = time.Time{}
+	c.ClientID = ""
+	c.ClientSecret = ""
 	return c.save()
 }
 
@@ -148,5 +193,11 @@ func (c *Config) save() error {
 	return os.WriteFile(c.Path, data, 0o600)
 }
 
-// Ensure strings import is used
-var _ = strings.ReplaceAll
+func firstEnv(names ...string) string {
+	for _, name := range names {
+		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+			return v
+		}
+	}
+	return ""
+}

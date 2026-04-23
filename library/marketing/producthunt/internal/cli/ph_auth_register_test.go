@@ -131,18 +131,18 @@ func TestAuthRegister_NonInteractive_HappyPath(t *testing.T) {
 	if back.AccessToken != "tok_xyz" {
 		t.Fatalf("AccessToken = %q", back.AccessToken)
 	}
-	if !back.HasOAuth() {
-		t.Fatalf("HasOAuth() should be true after SaveOAuth")
+	if !back.HasGraphQLToken() {
+		t.Fatalf("HasGraphQLToken() should be true after SaveOAuth")
 	}
 }
 
 func TestMaskMiddle(t *testing.T) {
 	cases := []struct {
-		in, want    string
-		head, tail  int
+		in, want   string
+		head, tail int
 	}{
 		{"abcdefghij", "abcd**ghij", 4, 4},
-		{"short", "*****", 4, 4},   // too short — fully masked
+		{"short", "*****", 4, 4}, // too short — fully masked
 		{"1234567890", "12******90", 2, 2},
 	}
 	for _, c := range cases {
@@ -181,8 +181,8 @@ func TestAuthRegister_InteractivePromptsAndSaves(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
-	if !reloaded.HasOAuth() {
-		t.Fatalf("HasOAuth() false after reload")
+	if !reloaded.HasGraphQLToken() {
+		t.Fatalf("HasGraphQLToken() false after reload")
 	}
 	if reloaded.AccessToken != "interactive_tok" {
 		t.Fatalf("token round-trip: %q", reloaded.AccessToken)
@@ -203,6 +203,12 @@ func TestAuthRegister_CommandWiring(t *testing.T) {
 	}
 	if cmd.Flags().Lookup("client-secret") == nil {
 		t.Fatalf("--client-secret flag not declared")
+	}
+	if cmd.Flags().Lookup("client-id-env") == nil {
+		t.Fatalf("--client-id-env flag not declared")
+	}
+	if cmd.Flags().Lookup("client-secret-env") == nil {
+		t.Fatalf("--client-secret-env flag not declared")
 	}
 	// Runnable check (no panics in setup path).
 	var buf bytes.Buffer
