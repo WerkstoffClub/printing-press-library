@@ -161,22 +161,41 @@ Once synced, use the 'search' command for instant full-text search.`,
 	return cmd
 }
 
-// syncResource handles the full paginated sync of a single resource.
-// It resumes from the last cursor unless sinceTS or full mode overrides it.
-func syncResource(c interface {
+// syncClient is the minimal client surface syncResource needs.
+type syncClient interface {
 	Get(string, map[string]string) (json.RawMessage, error)
 	RateLimit() float64
-}, db *store.Store, resource, sinceTS string, full bool) syncResult {
+}
+
+// syncResource handles the full paginated sync of a single resource.
+// It resumes from the last cursor unless sinceTS or full mode overrides it.
+//
+// If the resource's path contains an `{account_id}` placeholder, the sync fans
+// out across every ad account the token can see (fetched on demand from
+// /me/adaccounts), runs the page loop once per account, and aggregates results.
+func syncResource(c syncClient, db *store.Store, resource, sinceTS string, full bool) syncResult {
 	started := time.Now()
 
 	if !humanFriendly {
 		fmt.Fprintf(os.Stderr, `{"event":"sync_start","resource":"%s"}`+"\n", resource)
 	}
 
-	path := syncResourcePath(resource)
+	rawPath := syncResourcePath(resource)
+
+	// Expand {account_id} placeholders into one path per ad account.
+	paths, err := expandResourcePaths(c, rawPath)
+	if err != nil {
+		if !humanFriendly {
+			fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
+		}
+		return syncResult{Resource: resource, Err: fmt.Errorf("resolving %s parents: %w", resource, err), Duration: time.Since(started)}
+	}
+
 	var totalCount int
 
-	// Resume cursor from sync_state (unless --full cleared it)
+	// Resume cursor from sync_state (unless --full cleared it). Cursor resume
+	// is only meaningful for non-templated resources; with templates we walk
+	// every account every run and rely on incremental --since for filtering.
 	existingCursor, lastSynced, _, _ := db.GetSyncState(resource)
 
 	// Determine the since param value:
@@ -188,90 +207,98 @@ func syncResource(c interface {
 		effectiveSince = lastSynced.Format(time.RFC3339)
 	}
 
-	cursor := existingCursor
 	pageSize := determinePaginationDefaults()
-
 	var progressCount int64
 
-	for {
-		params := map[string]string{}
+	// Reset cursor for templated resources (cursor only applies to one path).
+	startCursor := existingCursor
+	if len(paths) > 1 {
+		startCursor = ""
+	}
 
-		// Set page size
-		params[pageSize.limitParam] = strconv.Itoa(pageSize.limit)
+	for _, path := range paths {
+		cursor := startCursor
 
-		// Set cursor for resume
-		if cursor != "" {
-			params[pageSize.cursorParam] = cursor
-		}
+		for {
+			params := map[string]string{}
 
-		// Set since filter
-		if effectiveSince != "" {
-			params[sinceParam] = effectiveSince
-		}
+			// Set page size
+			params[pageSize.limitParam] = strconv.Itoa(pageSize.limit)
 
-		data, err := c.Get(path, params)
-		if err != nil {
-			if !humanFriendly {
-				fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
+			// Set cursor for resume
+			if cursor != "" {
+				params[pageSize.cursorParam] = cursor
 			}
-			return syncResult{Resource: resource, Count: totalCount, Err: fmt.Errorf("fetching %s: %w", resource, err), Duration: time.Since(started)}
-		}
 
-		// Try to extract items from the response.
-		// Strategy: try array first, then common wrapper keys.
-		items, nextCursor, hasMore := extractPageItems(data, pageSize.cursorParam)
+			// Set since filter
+			if effectiveSince != "" {
+				params[sinceParam] = effectiveSince
+			}
 
-		if len(items) == 0 {
-			// Single object response - try to store as-is
-			if err := upsertSingleObject(db, resource, data); err != nil {
+			data, err := c.Get(path, params)
+			if err != nil {
 				if !humanFriendly {
 					fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
 				}
-				return syncResult{Resource: resource, Err: err, Duration: time.Since(started)}
+				return syncResult{Resource: resource, Count: totalCount, Err: fmt.Errorf("fetching %s: %w", resource, err), Duration: time.Since(started)}
 			}
-			totalCount++
-			break
-		}
 
-		// Batch upsert all items from this page
-		if err := db.UpsertBatch(resource, items); err != nil {
-			if !humanFriendly {
-				fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
+			// Try to extract items from the response.
+			// Strategy: try array first, then common wrapper keys.
+			items, nextCursor, hasMore := extractPageItems(data, pageSize.cursorParam)
+
+			if len(items) == 0 {
+				// Single object response - try to store as-is
+				if err := upsertSingleObject(db, resource, data); err != nil {
+					if !humanFriendly {
+						fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
+					}
+					return syncResult{Resource: resource, Err: err, Duration: time.Since(started)}
+				}
+				totalCount++
+				break
 			}
-			return syncResult{Resource: resource, Count: totalCount, Err: fmt.Errorf("upserting batch for %s: %w", resource, err), Duration: time.Since(started)}
-		}
 
-		totalCount += len(items)
-		atomic.AddInt64(&progressCount, int64(len(items)))
+			// Batch upsert all items from this page
+			if err := db.UpsertBatch(resource, items); err != nil {
+				if !humanFriendly {
+					fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
+				}
+				return syncResult{Resource: resource, Count: totalCount, Err: fmt.Errorf("upserting batch for %s: %w", resource, err), Duration: time.Since(started)}
+			}
 
-		// Progress reporting (include rate limit info when active)
-		currentRate := c.RateLimit()
-		if humanFriendly {
-			if currentRate > 0 {
-				fmt.Fprintf(os.Stderr, "\r  %s: %d synced [%.1f req/s]", resource, atomic.LoadInt64(&progressCount), currentRate)
+			totalCount += len(items)
+			atomic.AddInt64(&progressCount, int64(len(items)))
+
+			// Progress reporting (include rate limit info when active)
+			currentRate := c.RateLimit()
+			if humanFriendly {
+				if currentRate > 0 {
+					fmt.Fprintf(os.Stderr, "\r  %s: %d synced [%.1f req/s]", resource, atomic.LoadInt64(&progressCount), currentRate)
+				} else {
+					fmt.Fprintf(os.Stderr, "\r  %s: %d synced", resource, atomic.LoadInt64(&progressCount))
+				}
 			} else {
-				fmt.Fprintf(os.Stderr, "\r  %s: %d synced", resource, atomic.LoadInt64(&progressCount))
+				if currentRate > 0 {
+					fmt.Fprintf(os.Stderr, `{"event":"sync_progress","resource":"%s","fetched":%d,"rate_rps":%.1f}`+"\n", resource, atomic.LoadInt64(&progressCount), currentRate)
+				} else {
+					fmt.Fprintf(os.Stderr, `{"event":"sync_progress","resource":"%s","fetched":%d}`+"\n", resource, atomic.LoadInt64(&progressCount))
+				}
 			}
-		} else {
-			if currentRate > 0 {
-				fmt.Fprintf(os.Stderr, `{"event":"sync_progress","resource":"%s","fetched":%d,"rate_rps":%.1f}`+"\n", resource, atomic.LoadInt64(&progressCount), currentRate)
-			} else {
-				fmt.Fprintf(os.Stderr, `{"event":"sync_progress","resource":"%s","fetched":%d}`+"\n", resource, atomic.LoadInt64(&progressCount))
+
+			// Save cursor after each page for resumability
+			if err := db.SaveSyncState(resource, nextCursor, totalCount); err != nil {
+				// Non-fatal: log and continue
+				fmt.Fprintf(os.Stderr, "\nwarning: failed to save sync state for %s: %v\n", resource, err)
 			}
-		}
 
-		// Save cursor after each page for resumability
-		if err := db.SaveSyncState(resource, nextCursor, totalCount); err != nil {
-			// Non-fatal: log and continue
-			fmt.Fprintf(os.Stderr, "\nwarning: failed to save sync state for %s: %v\n", resource, err)
-		}
+			// Determine if there are more pages
+			if !hasMore || len(items) < pageSize.limit || nextCursor == "" {
+				break
+			}
 
-		// Determine if there are more pages
-		if !hasMore || len(items) < pageSize.limit || nextCursor == "" {
-			break
+			cursor = nextCursor
 		}
-
-		cursor = nextCursor
 	}
 
 	// Final sync state: clear cursor (sync is complete), update count
@@ -282,6 +309,45 @@ func syncResource(c interface {
 	}
 
 	return syncResult{Resource: resource, Count: totalCount, Duration: time.Since(started)}
+}
+
+// expandResourcePaths substitutes `{account_id}` placeholders in a resource
+// path by fetching the user's ad accounts on demand. Paths without that
+// placeholder are returned as a single-element slice. Returns an error if the
+// account fetch fails or yields no accounts.
+func expandResourcePaths(c syncClient, rawPath string) ([]string, error) {
+	if !strings.Contains(rawPath, "{account_id}") {
+		return []string{rawPath}, nil
+	}
+
+	data, err := c.Get("/me/adaccounts", map[string]string{
+		"fields": "id",
+		"limit":  "200",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("listing ad accounts for {account_id} expansion: %w", err)
+	}
+
+	var envelope struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, fmt.Errorf("parsing /me/adaccounts response: %w", err)
+	}
+	if len(envelope.Data) == 0 {
+		return nil, fmt.Errorf("no ad accounts returned for {account_id} expansion (token may lack ads_read scope)")
+	}
+
+	paths := make([]string, 0, len(envelope.Data))
+	for _, acct := range envelope.Data {
+		if acct.ID == "" {
+			continue
+		}
+		paths = append(paths, strings.ReplaceAll(rawPath, "{account_id}", acct.ID))
+	}
+	return paths, nil
 }
 
 // paginationDefaults holds the resolved pagination parameter names and page size.
