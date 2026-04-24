@@ -22,7 +22,7 @@ Reach for this when the user wants to:
 - Search across all of a creator's video transcripts (`tiktok transcripts`)
 - Snapshot a hashtag's momentum (`search trends`)
 - Audit API credit spend and forecast days remaining (`account budget`)
-- Pull the built-in archiveable resource set into local SQLite for offline work (`sync`, `workflow archive`)
+- Pull the built-in archiveable resource set into local SQLite for offline work (`sync`, `workflow archive`; today this is `account` request history)
 - Full-text-search synced data (`search`)
 
 Skip this CLI when the user wants to *post* content (it's read-only) or authenticate as a specific social-media user (it only sees public data).
@@ -93,7 +93,7 @@ claude mcp add scrape-creators scrape-creators-pp-mcp -e SCRAPE_CREATORS_API_KEY
    ```bash
    scrape-creators-pp-cli <platform> <action> [args] --agent
    ```
-5. For repeat analytics, run `scrape-creators-pp-cli sync --resources <type>` first so later commands read from local SQLite.
+5. For repeat offline search over the built-in archiveable set, run `scrape-creators-pp-cli sync` first so later commands can read from local SQLite.
 
 Handle / hashtag normalization: the CLI strips leading `@` from handles and `#` from hashtags automatically. Both `@charlidamelio` and `charlidamelio` work.
 
@@ -140,11 +140,11 @@ Handle / hashtag normalization: the CLI strips leading `@` from handles and `#` 
 | `search trends` | Snapshot a hashtag's result count + top videos (`--hashtag <tag>`) |
 | `account budget` | Credit balance + projected days remaining at current burn rate |
 | `account api-usage` / `daily-usage` / `most-used-routes` | Usage history views |
-| `sync` | Pull API data into local SQLite (`--resources <list>`, `--since <dur>`, `--full`) |
+| `sync` | Pull archiveable API data into local SQLite (`--resources <list>`, `--since <dur>`, `--full`; no args = built-in archiveable set) |
 | `tail <resource>` | Stream live changes by polling one resource (NDJSON to stdout) |
 | `analytics` | Count / group-by / top-N over synced data |
-| `export` | Export synced data to JSONL or JSON (`--format`, `--output`) |
-| `workflow archive` | One-shot sync of the built-in archiveable resource set; `--full` forces re-archive |
+| `export` | Export a supported canonical API resource to JSONL or JSON via live API read (`--format`, `--output`) |
+| `workflow archive` | One-shot sync of the built-in archiveable resource set (currently `account`); `--full` forces re-archive |
 | `workflow status` | Local archive sync state |
 | `api` | Browse every raw API endpoint by interface name (power-user escape hatch) |
 | `agent add` | Wire the MCP server into `claude-code`, `claude-desktop`, `cursor`, or `codex` |
