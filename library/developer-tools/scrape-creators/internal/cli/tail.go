@@ -64,6 +64,9 @@ native streaming instead of polling.`,
 
 			// Initial fetch
 			if err := fetchAndEmit(c, path, enc); err != nil {
+				if flags.dryRun || !follow {
+					return err
+				}
 				fmt.Fprintf(os.Stderr, "warning: initial fetch failed: %v\n", err)
 			}
 			if flags.dryRun || !follow {

@@ -13,10 +13,11 @@ type resourceSpec struct {
 	Path        string
 	Aliases     []string
 	Description string
+	Archiveable bool
 }
 
 var syncResourceSpecs = []resourceSpec{
-	{Name: "account", Path: "/v1/account/get-api-usage", Description: "account usage snapshots"},
+	{Name: "account", Path: "/v1/account/get-api-usage", Description: "account usage snapshots", Archiveable: true},
 	{Name: "bluesky", Path: "/v1/bluesky/user/posts", Description: "Bluesky user posts"},
 	{Name: "facebook", Path: "/v1/facebook/group/posts", Description: "Facebook group posts"},
 	{Name: "google", Path: "/v1/google/search", Description: "Google search results"},
@@ -108,6 +109,17 @@ func knownResourceNames() []string {
 	names := make([]string, 0, len(syncResourceSpecs))
 	for _, spec := range syncResourceSpecs {
 		names = append(names, spec.Name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func archiveableResourceNames() []string {
+	names := make([]string, 0, len(syncResourceSpecs))
+	for _, spec := range syncResourceSpecs {
+		if spec.Archiveable {
+			names = append(names, spec.Name)
+		}
 	}
 	sort.Strings(names)
 	return names

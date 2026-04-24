@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,6 +65,69 @@ func engagementRate(play, like, comment, share float64) float64 {
 		return 0
 	}
 	return (like + comment + share) / play * 100
+}
+
+func firstNumericField(obj map[string]any, keys ...string) float64 {
+	for _, key := range keys {
+		switch v := obj[key].(type) {
+		case float64:
+			return v
+		case json.Number:
+			f, _ := v.Float64()
+			return f
+		case int:
+			return float64(v)
+		case int64:
+			return float64(v)
+		case string:
+			f, _ := strconv.ParseFloat(v, 64)
+			return f
+		}
+	}
+	return 0
+}
+
+func nestedMap(obj map[string]any, key string) map[string]any {
+	child, _ := obj[key].(map[string]any)
+	return child
+}
+
+func parseAccountBudgetData(balanceData, dailyData json.RawMessage) (float64, float64) {
+	var balance map[string]any
+	_ = json.Unmarshal(balanceData, &balance)
+
+	creditsRemaining := firstNumericField(balance, "credits_remaining", "creditCount")
+	if results := nestedMap(balance, "results"); results != nil {
+		if nested := firstNumericField(results, "credits_remaining", "creditCount"); nested > 0 {
+			creditsRemaining = nested
+		}
+	}
+
+	var daily map[string]any
+	_ = json.Unmarshal(dailyData, &daily)
+
+	dailyBurn := 0.0
+	var usage []any
+	if arrayRoot := []any(nil); json.Unmarshal(dailyData, &arrayRoot) == nil && len(arrayRoot) > 0 {
+		usage = arrayRoot
+	} else {
+		usageRoot := daily
+		if results := nestedMap(daily, "results"); results != nil {
+			usageRoot = results
+		}
+		usage, _ = usageRoot["usage"].([]any)
+	}
+	if len(usage) > 0 {
+		total := 0.0
+		for _, u := range usage {
+			if m, ok := u.(map[string]any); ok {
+				total += firstNumericField(m, "count", "credits", "creditCount", "total_credits", "request_count")
+			}
+		}
+		dailyBurn = total / float64(len(usage))
+	}
+
+	return creditsRemaining, dailyBurn
 }
 
 // ── spikes ───────────────────────────────────────────────────────────────────
@@ -631,7 +695,7 @@ func newAccountBudgetCmd(flags *rootFlags) *cobra.Command {
 			}
 
 			// Get current balance
-			balanceData, err := c.Get("/v1/account/get-api-usage", map[string]string{})
+			balanceData, err := c.Get("/v1/account/credit-balance", map[string]string{})
 			if err != nil {
 				// Fallback: try profile endpoint which returns credits_remaining
 				balanceData, err = c.Get("/v1/tiktok/profile", map[string]string{"handle": "tiktok"})
@@ -642,34 +706,7 @@ func newAccountBudgetCmd(flags *rootFlags) *cobra.Command {
 
 			// Get daily usage
 			dailyData, _ := c.Get("/v1/account/get-daily-usage-count", map[string]string{})
-
-			var balance map[string]any
-			json.Unmarshal(balanceData, &balance)
-			var daily map[string]any
-			if dailyData != nil {
-				json.Unmarshal(dailyData, &daily)
-			}
-
-			creditsRemaining := 0.0
-			if cr, ok := balance["credits_remaining"].(float64); ok {
-				creditsRemaining = cr
-			}
-
-			// Compute daily burn rate from daily usage if available
-			dailyBurn := 0.0
-			if daily != nil {
-				if usage, ok := daily["usage"].([]any); ok && len(usage) > 0 {
-					total := 0.0
-					for _, u := range usage {
-						if m, ok := u.(map[string]any); ok {
-							if cnt, ok := m["count"].(float64); ok {
-								total += cnt
-							}
-						}
-					}
-					dailyBurn = total / float64(len(usage))
-				}
-			}
+			creditsRemaining, dailyBurn := parseAccountBudgetData(balanceData, dailyData)
 
 			daysRemaining := 0.0
 			if dailyBurn > 0 {

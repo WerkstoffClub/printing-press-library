@@ -30,11 +30,11 @@ func newWorkflowArchiveCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "archive",
-		Short: "Sync all resources to local store for offline access and search",
-		Long: `Archive fetches all syncable resources from the API and stores them in a
+		Short: "Sync the built-in archiveable resources to the local store",
+		Long: `Archive fetches the built-in archiveable resource set from the API and stores it in a
 local SQLite database. Supports incremental sync (only new data since last run)
 and full resync. After archiving, use 'search' for instant full-text search.`,
-		Example: `  # Archive all resources
+		Example: `  # Archive the built-in archiveable set
   scrape-creators-pp-cli workflow archive
 
   # Full re-archive (ignore previous sync state)

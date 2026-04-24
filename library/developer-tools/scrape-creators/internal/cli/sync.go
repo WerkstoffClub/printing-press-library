@@ -38,12 +38,13 @@ func newSyncCmd(flags *rootFlags) *cobra.Command {
 		Short: "Sync API data to local SQLite for offline search and analysis",
 		Long: `Sync data from the API into a local SQLite database. Supports resumable
 incremental sync (only fetches new data since last sync) and full resync.
-Once synced, use the 'search' command for instant full-text search.`,
-		Example: `  # Sync all resources
+If you omit --resources, the CLI syncs only the built-in archiveable resource
+set. Use an explicit --resources list for any other canonical resource.`,
+		Example: `  # Sync the built-in archiveable resource set
   scrape-creators-pp-cli sync
 
   # Sync specific resources only
-  scrape-creators-pp-cli sync --resources channels,messages
+  scrape-creators-pp-cli sync --resources account,tiktok
 
   # Full resync (ignore previous checkpoint)
   scrape-creators-pp-cli sync --full
@@ -70,7 +71,7 @@ Once synced, use the 'search' command for instant full-text search.`,
 			}
 			defer db.Close()
 
-			// If no specific resources, sync top-level resources
+			// If no specific resources, sync only the built-in archiveable set.
 			if len(resources) == 0 {
 				resources = defaultSyncResources()
 			}
@@ -488,11 +489,7 @@ func parseSinceDuration(s string) (time.Time, error) {
 }
 
 func defaultSyncResources() []string {
-	resources := make([]string, 0, len(syncResourceSpecs))
-	for _, spec := range syncResourceSpecs {
-		resources = append(resources, spec.Name)
-	}
-	return resources
+	return archiveableResourceNames()
 }
 
 func extractID(obj map[string]any) string {

@@ -72,3 +72,10 @@ func TestResourceAPIPathPrefersKnownResourceMapping(t *testing.T) {
 		t.Fatalf("resourceAPIPath(custom) = %q", got)
 	}
 }
+
+func TestArchiveableResourceNames(t *testing.T) {
+	got := archiveableResourceNames()
+	if len(got) != 1 || got[0] != "account" {
+		t.Fatalf("archiveableResourceNames() = %v, want [account]", got)
+	}
+}
