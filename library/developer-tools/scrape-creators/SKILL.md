@@ -8,7 +8,7 @@ metadata: '{"openclaw":{"requires":{"bins":["scrape-creators-pp-cli"],"env":["SC
 
 # Scrape Creators - Printing Press CLI
 
-Scrape public social-media data from the terminal — profiles, posts, comments, videos, ads, and transcripts across 30+ platforms. Read-only wrapper around the [Scrape Creators](https://scrapecreators.com) API. Ships a local SQLite sync and analytics commands (`spikes`, `compare`, `cadence`, `track`, `analyze`, `transcripts`, `search trends`, `account budget`) that compound over time.
+Scrape public social-media data from the terminal — profiles, posts, comments, videos, ads, and transcripts across 30+ platforms. Read-only wrapper around the [Scrape Creators](https://scrapecreators.com) API. Ships a local SQLite sync and analytics commands (`spikes`, `compare`, `cadence`, `track`, `analyze`, `transcripts`, `search trends`, `account budget`) that compound over time. Live API calls consume credits; use `--dry-run`, `account budget`, and the local sync when iterating.
 
 ## When to Use This CLI
 
@@ -22,7 +22,7 @@ Reach for this when the user wants to:
 - Search across all of a creator's video transcripts (`tiktok transcripts`)
 - Snapshot a hashtag's momentum (`search trends`)
 - Audit API credit spend and forecast days remaining (`account budget`)
-- Pull a platform's data into local SQLite for offline work (`sync`, `workflow archive`)
+- Pull the built-in archiveable resource set into local SQLite for offline work (`sync`, `workflow archive`)
 - Full-text-search synced data (`search`)
 
 Skip this CLI when the user wants to *post* content (it's read-only) or authenticate as a specific social-media user (it only sees public data).
@@ -74,6 +74,8 @@ scrape-creators-pp-cli agent add claude-code --hosted
 # Use --force to overwrite an existing scrape-creators entry (diff is printed by default)
 scrape-creators-pp-cli agent add cursor --force
 ```
+
+`agent add` does not require credentials up front. If `SCRAPE_CREATORS_API_KEY_AUTH` is missing, the CLI still writes the MCP entry and leaves auth for you to add later.
 
 All writes land at mode `0600`. Alternatively, install the MCP binary manually:
 
@@ -139,11 +141,11 @@ Handle / hashtag normalization: the CLI strips leading `@` from handles and `#` 
 | `account budget` | Credit balance + projected days remaining at current burn rate |
 | `account api-usage` / `daily-usage` / `most-used-routes` | Usage history views |
 | `sync` | Pull API data into local SQLite (`--resources <list>`, `--since <dur>`, `--full`) |
-| `tail` | Stream live changes by polling the API (NDJSON to stdout) |
+| `tail <resource>` | Stream live changes by polling one resource (NDJSON to stdout) |
 | `analytics` | Count / group-by / top-N over synced data |
 | `export` | Export synced data to JSONL or JSON (`--format`, `--output`) |
 | `import` | Push a JSONL file into the API via upsert |
-| `workflow archive` | One-shot sync of every supported resource; `--full` forces re-archive |
+| `workflow archive` | One-shot sync of the built-in archiveable resource set; `--full` forces re-archive |
 | `workflow status` | Local archive sync state |
 | `api` | Browse every raw API endpoint by interface name (power-user escape hatch) |
 | `agent add` | Wire the MCP server into `claude-code`, `claude-desktop`, `cursor`, or `codex` |
@@ -176,7 +178,7 @@ Use this to narrow huge payloads to the fields you actually need.
 
 ### Response envelope
 
-Data-layer commands wrap output in `{"meta": {...}, "results": <data>}`. Parse `.results` for data and `.meta.source` to know whether it's `live` or local. The `N results (live)` summary is printed to stderr only when stdout is a TTY; piped/agent consumers see pure JSON on stdout.
+Data-layer commands wrap successful output in `{"meta": {...}, "results": <data>}`. Parse `.results` for data and `.meta.source` to know whether it's `live` or local. Errors stay on stderr and do not use the envelope. The `N results (live)` summary is printed to stderr only when stdout is a TTY; piped/agent consumers see pure JSON on stdout.
 
 ## Exit Codes
 

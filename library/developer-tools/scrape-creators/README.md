@@ -3,6 +3,23 @@
 Scrape public social media data from the terminal — profiles, posts, videos, comments, ads, and transcripts across TikTok, Instagram, YouTube, Twitter/X, LinkedIn, Facebook, Reddit, Threads, Bluesky, Pinterest, Snapchat, Twitch, Kick, Truth Social, and 15+ link-in-bio / creator link services.
 
 Powered by the [Scrape Creators](https://scrapecreators.com) API. Read-only — this CLI fetches data, it does not post.
+Each live API call burns credits. Use `--dry-run` to preview requests, `account budget` to watch spend, and the local SQLite sync for repeated analysis.
+
+## Table of Contents
+
+- [Install](#install)
+- [Quick Start](#quick-start)
+- [Key Features](#key-features)
+- [What This Can't Do](#what-this-cant-do)
+- [Interactive Wizard](#interactive-wizard)
+- [Commands](#commands)
+- [Output Formats](#output-formats)
+- [Agent Usage](#agent-usage)
+- [MCP Server](#mcp-server)
+- [Cookbook](#cookbook)
+- [Health Check](#health-check)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
 
 ## Install
 
@@ -52,11 +69,17 @@ Commands that go beyond what the raw API returns, built on top of the local SQLi
 - **`tiktok cadence`** — Show a creator's posting frequency by day of week and hour of day.
 - **`tiktok track`** — Record daily follower snapshots and chart a creator's growth trajectory.
 - **`tiktok analyze`** — Rank a creator's videos by engagement rate (not raw likes).
-- **`workflow archive`** — Sync every platform's available data locally for offline search and analysis.
+- **`workflow archive`** — Sync the CLI's built-in archiveable resource set locally for offline search and analysis.
+
+## What This Can't Do
+
+- Post, comment, DM, like, follow, or otherwise write to social platforms. This CLI is read-only.
+- Archive every single endpoint automatically. `workflow archive` covers a curated set of no-input resources; endpoints that require a handle, URL, or other required args stay explicit commands.
+- Guarantee a credential verdict from `doctor`. The upstream validation surface is inconsistent, so `doctor` reports missing or rejected auth as failures and otherwise labels credentials `inconclusive` unless the API clearly rejects them.
 
 ## Interactive Wizard
 
-Running `scrape-creators-pp-cli` with no arguments on a TTY walks you through platform → action → required params, then executes the resolved command. Bypass with `--no-input`, `--agent`, `--yes`, or by piping stdin.
+Running `scrape-creators-pp-cli` with no arguments on a TTY walks you through platform → action → required params, then executes the resolved command. Bypass the wizard with `--no-input`, `--agent`, `--yes`, or by piping stdin / running on a non-TTY.
 
 ## Commands
 
@@ -276,6 +299,7 @@ These platforms expose one endpoint each — run the top-level command directly.
 | `account most-used-routes` | Most-used endpoints |
 | `account budget` | Credit balance + projected days remaining (see Key Features) |
 | `auth set-token` / `auth status` / `auth logout` | Token management |
+| `completion <shell>` | Generate shell completion (`bash`, `zsh`, `fish`, `powershell`) |
 | `doctor` | Environment / auth / connectivity health check |
 | `version` | Print version |
 
@@ -286,14 +310,14 @@ The CLI ships a local SQLite layer so you can pull data once and iterate fast.
 | Command | What it does |
 |---------|--------------|
 | `sync` | Pull API data into local SQLite with resumable pagination |
-| `tail` | Stream live changes by polling the API (NDJSON to stdout) |
+| `tail <resource>` | Stream live changes by polling one resource (NDJSON to stdout) |
 | `search <query>` | FTS5 full-text search over synced data (falls back to API when available) |
 | `search trends <hashtag>` | Snapshot hashtag result count + top videos for trend tracking |
 | `analytics` | Count / group-by / top-N over synced data |
 | `export` | Export to JSONL or JSON |
 | `import` | Import a JSONL file via API upsert |
 | `api` | Browse every raw API endpoint by interface name (power-user escape hatch) |
-| `workflow archive` | One-shot sync of every supported resource |
+| `workflow archive` | One-shot sync of the built-in archiveable resource set |
 | `workflow status` | Local archive sync state |
 
 ## Output Formats
@@ -320,7 +344,7 @@ scrape-creators-pp-cli tiktok profile --handle charlidamelio --dry-run
 scrape-creators-pp-cli tiktok profile --handle charlidamelio --agent
 ```
 
-Responses use a `{"meta": {...}, "results": <data>}` envelope. Parse `.results` for payload, `.meta.source` for `live` vs `local`. The `N results (live)` footer prints to stderr only when stdout is a TTY.
+Successful data-layer commands use a `{"meta": {...}, "results": <data>}` envelope. Parse `.results` for payload and `.meta.source` for `live` vs `local`. Errors are plain stderr text and do not use the envelope. The `N results (live)` footer prints to stderr only when stdout is a TTY.
 
 ## Agent Usage
 
@@ -333,6 +357,12 @@ Designed for AI-agent consumption:
 - **Cacheable** — GET responses cached 5 min, bypass with `--no-cache`.
 - **Rate-limitable** — `--rate-limit <rps>` caps requests per second.
 - **Data-source switch** — `--data-source live|local|auto` chooses between API, local SQLite, or automatic fallback.
+
+Example NDJSON progress stream:
+
+```bash
+scrape-creators-pp-cli sync --resources tiktok --agent 2>progress.ndjson
+```
 
 Exit codes: `0` success · `2` usage error · `3` not found · `4` auth error · `5` API error · `7` rate limited · `10` config error.
 
@@ -359,7 +389,7 @@ scrape-creators-pp-cli agent add codex
 # Add --force to overwrite an existing scrape-creators entry (a diff is printed by default)
 ```
 
-All writes are `chmod 0600`. Existing entries are refused without `--force`.
+All writes are `chmod 0600`. Existing entries are refused without `--force`. If no API key is present yet, `agent add` still writes the MCP entry and leaves credentials for you to add later.
 
 ### Manual config (Claude Desktop)
 
@@ -392,7 +422,7 @@ scrape-creators-pp-cli tiktok spikes --handle charlidamelio --threshold 2 --json
 scrape-creators-pp-cli tiktok track --handle charlidamelio
 scrape-creators-pp-cli tiktok track --handle charlidamelio --history
 
-# Archive everything locally, then search offline
+# Archive the built-in syncable resource set, then search offline
 scrape-creators-pp-cli workflow archive
 scrape-creators-pp-cli search "viral marketing"
 
@@ -409,9 +439,9 @@ scrape-creators-pp-cli search trends --hashtag fyp --json
 # Search across all of a creator's transcripts
 scrape-creators-pp-cli tiktok transcripts --handle charlidamelio --search "morning routine"
 
-# Sync a subset of resources then export for external analysis
-scrape-creators-pp-cli sync --resources tiktok_videos --since 30d
-scrape-creators-pp-cli export tiktok_videos --format jsonl --output tiktok.jsonl
+# Sync one canonical resource type, then export it for external analysis
+scrape-creators-pp-cli sync --resources tiktok
+scrape-creators-pp-cli export tiktok --format jsonl --output tiktok.jsonl
 ```
 
 ## Health Check
@@ -440,9 +470,18 @@ Optional:
 - `scrape-creators-pp-cli doctor` to see what's set
 - `echo $SCRAPE_CREATORS_API_KEY_AUTH` to verify the variable is exported
 
+**`doctor` says credentials are inconclusive**
+- The CLI could not prove your credentials from the upstream validation endpoint, but it also did not see an explicit auth rejection
+- Run a low-impact real command like `scrape-creators-pp-cli account budget --dry-run` to confirm request wiring without spending credits
+- If a real request fails with `401` or `403`, rotate the key and retry
+
 **Not found (exit 3)**
 - Check the handle / URL is correct and the account is public
 - Some platforms (Truth Social, older Snapchat profiles) only expose prominent public accounts
+
+**`tail` fails immediately**
+- Pass a resource name: `scrape-creators-pp-cli tail tiktok`
+- Use `--follow=false` for a single poll instead of a continuous stream
 
 **Rate limited (exit 7)**
 - The CLI auto-retries with exponential backoff
@@ -450,6 +489,14 @@ Optional:
 
 **Transcript returns nothing**
 - Video must be under ~2 minutes for AI transcription endpoints (Facebook, Instagram, TikTok, Twitter, Threads)
+
+**MCP install before auth**
+- `scrape-creators-pp-cli agent add <target>` works even before you have a key
+- Re-run it later with `SCRAPE_CREATORS_API_KEY_AUTH` exported, or edit the generated agent config to add the key manually
+
+**Wizard did not launch**
+- The wizard only runs on a TTY with no command path
+- It is skipped automatically for pipes, CI, `--no-input`, `--agent`, and explicit subcommands
 
 ---
 
