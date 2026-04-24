@@ -124,7 +124,6 @@ func Execute() error {
 	rootCmd.AddCommand(newDoctorCmd(&flags))
 	rootCmd.AddCommand(newAuthCmd(&flags))
 	rootCmd.AddCommand(newExportCmd(&flags))
-	rootCmd.AddCommand(newImportCmd(&flags))
 	rootCmd.AddCommand(newSearchCmd(&flags))
 	rootCmd.AddCommand(newSyncCmd(&flags))
 	rootCmd.AddCommand(newTailCmd(&flags))

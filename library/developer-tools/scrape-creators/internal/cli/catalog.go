@@ -54,7 +54,6 @@ var apiUtilityCommands = map[string]bool{
 	"completion": true,
 	"doctor":     true,
 	"export":     true,
-	"import":     true,
 	"search":     true,
 	"sync":       true,
 	"tail":       true,
@@ -112,4 +111,15 @@ func knownResourceNames() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+func resourceAPIPath(name string) string {
+	if spec, ok := resolveResourceSpec(name); ok {
+		return spec.Path
+	}
+	resource := strings.TrimSpace(name)
+	if resource == "" {
+		return "/"
+	}
+	return "/" + resource
 }

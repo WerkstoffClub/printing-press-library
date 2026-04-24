@@ -60,3 +60,15 @@ func TestIsDryRunPayload(t *testing.T) {
 		t.Fatal("did not expect non-dry-run payload to be detected")
 	}
 }
+
+func TestResourceAPIPathPrefersKnownResourceMapping(t *testing.T) {
+	if got := resourceAPIPath("tiktok"); got != "/v1/tiktok/videos/popular" {
+		t.Fatalf("resourceAPIPath(tiktok) = %q", got)
+	}
+	if got := resourceAPIPath("tiktok_videos"); got != "/v1/tiktok/videos/popular" {
+		t.Fatalf("resourceAPIPath(alias) = %q", got)
+	}
+	if got := resourceAPIPath("custom"); got != "/custom" {
+		t.Fatalf("resourceAPIPath(custom) = %q", got)
+	}
+}
