@@ -176,7 +176,7 @@ func buildAgentDiscoveryContext() *agentContextDiscovery {
 			"backfill — Authenticated GraphQL historical seed; optional Product Hunt API token required",
 			"list — Query persisted snapshots by date/author",
 			"search — FTS over stored titles and taglines; --enrich can top up with authenticated GraphQL",
-			"info — Show /feed entry for a slug",
+			"get — Show /feed entry for a slug (alias: info)",
 			"trend — Rank/first-seen trajectory from persisted snapshots",
 			"watch — Diff current /feed vs last snapshot",
 		},

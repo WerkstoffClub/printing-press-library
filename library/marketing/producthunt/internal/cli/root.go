@@ -183,7 +183,7 @@ See README.md or the bundled SKILL.md for recipes.`,
 	rootCmd.AddCommand(newRecentCmd(&flags))
 	rootCmd.AddCommand(newListCmd(&flags))
 	rootCmd.AddCommand(newSearchCmd(&flags))
-	rootCmd.AddCommand(newInfoCmd(&flags))
+	rootCmd.AddCommand(newGetCmd(&flags))
 	rootCmd.AddCommand(newOpenCmd(&flags))
 	rootCmd.AddCommand(newTrendCmd(&flags))
 	rootCmd.AddCommand(newWatchCmd(&flags))

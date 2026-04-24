@@ -171,7 +171,7 @@ These capabilities aren't available in any other Product Hunt tool.
 | `sync` | Fetch `/feed` and persist a ranked snapshot |
 | `list` | Filter the local store by author, date range, or sort field |
 | `search <query>` | FTS5 match across titles, taglines, authors, and slugs |
-| `info <slug>` | One post's full `/feed` payload |
+| `get <slug>` | One post's full `/feed` payload (`info` remains an alias) |
 | `open <slug>` | Launch the Product Hunt page in your default browser |
 | `feed raw` | Dump the raw Atom XML to stdout |
 | `feed refresh` | Alias for `sync` |
@@ -326,7 +326,7 @@ Override the store path with `--db <path>` on any command that reads or writes i
 ## Troubleshooting
 
 - **Empty results after install** — run `producthunt-pp-cli sync` first. The store starts empty and the CLI refuses to fabricate data.
-- **`post <slug>`, `leaderboard daily`, etc. exit with code 3** — expected. Those commands are Cloudflare-gated stubs. Use `info <slug>` for `/feed`-level metadata and `open <slug>` to view the real page in your browser.
+- **`post <slug>`, `leaderboard daily`, etc. exit with code 3** — expected. Those commands are Cloudflare-gated stubs. Use `get <slug>` for `/feed`-level metadata and `open <slug>` to view the real page in your browser.
 - **`/feed` parse fails** — run `producthunt-pp-cli doctor --json` to confirm the feed is still serving Atom XML. Product Hunt occasionally returns a 503 during deploys.
 - **`search` returns nothing** — FTS5 only indexes what has been synced. One snapshot is 50 entries; run `sync` on a schedule to build a meaningful index.
 - **`trend <slug>` says "not in store"** — the slug was not in any snapshot the CLI has taken. Run `sync` when the product is currently featured, or wait for the next sync to pick it up.

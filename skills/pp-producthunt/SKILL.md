@@ -45,7 +45,7 @@ These commands exist so stubs are discoverable, but every one emits a JSON expla
 
 | Stub | What the user asked for | Alternative |
 |------|--------------------------|-------------|
-| `post <slug>` | Full post page | `info <slug>` (feed-level metadata) or `open <slug>` |
+| `post <slug>` | Full post page | `get <slug>` (feed-level metadata) or `open <slug>` |
 | `comments <slug>` | Post comments | `open <slug>` (browser) |
 | `leaderboard {daily,weekly,monthly,yearly}` | Historical leaderboard | Run `sync` on a schedule, then `list --since` / `trend` |
 | `topic <slug>` | Topic feed | None — `/feed?category=` is ignored server-side |
@@ -80,7 +80,7 @@ Full flag list in `producthunt-pp-cli --help`.
 | `auth set-token --token-env PRODUCTHUNT_DEVELOPER_TOKEN` | Persist an existing developer/API token without putting it in shell history |
 | `list [--author NAME] [--since DUR] [--until DUR] [--sort FIELD] [--asc] [--limit N]` | Query the local store |
 | `search <query> [--limit N] [--enrich] [--enrich-threshold N]` | FTS5 match across slug, title, tagline, author. `--enrich` tops up from GraphQL when local results are thin (GraphQL auth required). |
-| `info <slug> [--live] [--external] [--url-only]` | Single post payload |
+| `get <slug> [--live] [--external] [--url-only]` | Single post payload (`info` remains an alias for compatibility) |
 | `open <slug> [--external] [--dry]` | Open in the default browser |
 | `feed raw [--validate]` | Raw Atom XML to stdout |
 | `feed refresh` | Alias for `sync` |
@@ -202,7 +202,7 @@ producthunt-pp-cli which "<capability in the user's own words>"
 
 - `--dry-run` is a persistent flag inherited from the generator. On this CLI's read commands it is a no-op. Use `sync --dry-run-feed` to actually preview a sync without writing.
 - `--no-cache` exists but has no effect: the Atom fetch path doesn't go through the generator's cache layer.
-- `--data-source {auto,live,local}` controls store-vs-live preference on `today` and `info`; most commands ignore it.
+- `--data-source {auto,live,local}` controls store-vs-live preference on `today` and `get`; most commands ignore it.
 
 ## Exit Codes (Actually Used)
 
