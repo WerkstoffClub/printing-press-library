@@ -89,14 +89,17 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 					report["api"] = "reachable"
 				}
 
-				// Step 2: Validate credentials with an authenticated request
+				// Step 2: Validate credentials with an authenticated request.
+				// Meta's Graph API returns 401 for GET on the versioned root regardless
+				// of token validity, so we probe `/me?fields=id` instead — the canonical
+				// auth check that returns 200 with a tiny payload for any valid token.
 				authHeader := cfg.AuthHeader()
 				if authHeader == "" {
 					// No auth configured — skip credential validation
 				} else if !apiReachable {
 					report["credentials"] = "skipped (API unreachable)"
 				} else {
-					authReq, _ := http.NewRequest("GET", baseURL, nil)
+					authReq, _ := http.NewRequest("GET", baseURL+"/me?fields=id", nil)
 					authReq.Header.Set("Authorization", authHeader)
 					authReq.Header.Set("User-Agent", "meta-ads-pp-cli")
 					authResp, authErr := httpClient.Do(authReq)
@@ -111,7 +114,7 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 							report["credentials"] = fmt.Sprintf("invalid (HTTP %d) — check your credentials", authResp.StatusCode)
 						default:
 							// Non-auth HTTP error (404, 500, etc.) — don't blame credentials
-							report["credentials"] = fmt.Sprintf("ok (HTTP %d from base URL, but auth was accepted)", authResp.StatusCode)
+							report["credentials"] = fmt.Sprintf("ok (HTTP %d from /me, but auth was accepted)", authResp.StatusCode)
 						}
 					}
 				}
