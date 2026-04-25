@@ -5,7 +5,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/config"
 	"github.com/spf13/cobra"
@@ -14,7 +13,7 @@ import (
 func newAuthCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
-		Short: "Manage POKÉAPI_BASIC_AUTH credentials",
+		Short: "Manage authentication tokens",
 	}
 
 	cmd.AddCommand(newAuthStatusCmd(flags))
@@ -41,7 +40,6 @@ func newAuthStatusCmd(flags *rootFlags) *cobra.Command {
 				fmt.Fprintln(w, red("Not authenticated"))
 				fmt.Fprintln(w, "")
 				fmt.Fprintln(w, "Set your token:")
-				fmt.Fprintln(w, "  export POKÉAPI_BASIC_AUTH=\"your-token-here\"")
 				fmt.Fprintf(w, "  pokeapi-pp-cli auth set-token <token>\n")
 				return authErr(fmt.Errorf("no credentials configured"))
 			}
@@ -93,10 +91,6 @@ func newAuthLogoutCmd(flags *rootFlags) *cobra.Command {
 			}
 
 			// Warn if env vars still set
-			if os.Getenv("POKÉAPI_BASIC_AUTH") != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "Config cleared. Note: POKÉAPI_BASIC_AUTH env var is still set.\n")
-				return nil
-			}
 			fmt.Fprintln(cmd.OutOrStdout(), "Logged out. Credentials cleared.")
 			return nil
 		},

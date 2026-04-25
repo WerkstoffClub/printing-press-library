@@ -1,22 +1,10 @@
-# Pokeapi CLI
+# PokeAPI CLI
 
-All the Pokémon data you'll ever need in one place, easily accessible through a modern free open-source RESTful API.
+**PokeAPI as an agent-ready Pokemon knowledge graph, not just endpoint wrappers.**
 
-## What is this?
+This CLI keeps the full official PokeAPI REST surface while adding graph commands for the workflows people actually ask about: profiles, evolutions, moves, matchups, and team coverage. It is public-API friendly and requires no authentication for normal reads.
 
-This is a full RESTful API linked to an extensive database detailing everything about the Pokémon main game series.
-
-We've covered everything from Pokémon to Berry Flavors.
-
-## Where do I start?
-
-We have awesome [documentation](https://pokeapi.co/docs/v2) on how to use this API. It takes minutes to get started.
-
-This API will always be publicly available and will never require any extensive setup process to consume.
-
-Created by [**Paul Hallett**](https://github.com/phalt) and other [**PokéAPI contributors***](https://github.com/PokeAPI/pokeapi#contributing) around the world. Pokémon and Pokémon character names are trademarks of Nintendo.
-
-Learn more at [Pokeapi](https://pokeapi.co/docs/v2).
+Learn more at [PokeAPI](https://pokeapi.co/docs/v2).
 
 ## Install
 
@@ -30,35 +18,70 @@ go install github.com/mvanhorn/printing-press-library/library/media-and-entertai
 
 Download from [Releases](https://github.com/mvanhorn/printing-press-library/releases).
 
+## Authentication
+
+PokeAPI is publicly readable. No API key is required for the generated read commands or graph workflows.
+
 ## Quick Start
 
-### 1. Install
-
-See [Install](#install) above.
-
-### 2. Set Up Credentials
-
-Get your API key from your API provider's developer portal. The key typically looks like a long alphanumeric string.
-
 ```bash
-export POKÉAPI_BASIC_AUTH="<paste-your-key>"
+# Get a compact Pokemon profile
+pokeapi-pp-cli pokemon profile pikachu --json
+
+
+# Traverse species to evolution chain
+pokeapi-pp-cli pokemon evolution eevee --json
+
+
+# Analyze a small team
+pokeapi-pp-cli team coverage pikachu,charizard,blastoise --json
+
 ```
 
-You can also persist this in your config file at `~/.config/pokéapi-pp-cli/config.toml`.
+## Unique Features
 
-### 3. Verify Setup
+These capabilities aren't available in any other tool for this API.
 
-```bash
-pokeapi-pp-cli doctor
-```
+### Pokemon graph workflows
 
-This checks your configuration and credentials.
+- **`pokemon profile`** — Build an agent-ready Pokemon profile by combining core pokemon data, species metadata, type names, abilities, stats, and move counts.
 
-### 4. Try Your First Command
+  _Use this when a user asks what a Pokemon is, what it does, or needs a compact structured summary._
 
-```bash
-pokeapi-pp-cli v2 ability-list
-```
+  ```bash
+  pokeapi-pp-cli pokemon profile pikachu --json
+  ```
+- **`pokemon evolution`** — Resolve a Pokemon's species and evolution chain into a readable evolution path.
+
+  _Use this when a user asks what a Pokemon evolves into or from._
+
+  ```bash
+  pokeapi-pp-cli pokemon evolution eevee --json
+  ```
+
+### Battle planning
+
+- **`pokemon matchups`** — Summarize type weaknesses, resistances, immunities, and offensive coverage for a Pokemon.
+
+  _Use this for battle planning, weakness analysis, and type coverage questions._
+
+  ```bash
+  pokeapi-pp-cli pokemon matchups charizard --json
+  ```
+- **`pokemon moves`** — List and filter a Pokemon's moves by learn method, version group, and level learned.
+
+  _Use this when a user asks what moves a Pokemon learns and how._
+
+  ```bash
+  pokeapi-pp-cli pokemon moves bulbasaur --method level-up --version-group red-blue --json
+  ```
+- **`team coverage`** — Analyze a comma-separated Pokemon team for shared weaknesses, resistances, immunities, and offensive type coverage.
+
+  _Use this when a user asks whether a team is balanced or has dangerous shared weaknesses._
+
+  ```bash
+  pokeapi-pp-cli team coverage pikachu,charizard,blastoise --json
+  ```
 
 ## Usage
 
@@ -200,7 +223,7 @@ This CLI is designed for AI agent consumption:
 - **Offline-friendly** - sync/search commands can use the local SQLite store when available
 - **Agent-safe by default** - no colors or formatting unless `--human-friendly` is set
 
-Exit codes: `0` success, `2` usage error, `3` not found, `4` auth error, `5` API error, `7` rate limited, `10` config error.
+Exit codes: `0` success, `2` usage error, `3` not found, `5` API error, `7` rate limited, `10` config error.
 
 ## Use as MCP Server
 
@@ -209,7 +232,7 @@ This CLI ships a companion MCP server for use with Claude Desktop, Cursor, and o
 ### Claude Code
 
 ```bash
-claude mcp add pokeapi pokeapi-pp-mcp -e POKÉAPI_BASIC_AUTH=<your-key>
+claude mcp add pokeapi pokeapi-pp-mcp
 ```
 
 ### Claude Desktop
@@ -220,10 +243,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 {
   "mcpServers": {
     "pokeapi": {
-      "command": "pokeapi-pp-mcp",
-      "env": {
-        "POKÉAPI_BASIC_AUTH": "<your-key>"
-      }
+      "command": "pokeapi-pp-mcp"
     }
   }
 }
@@ -235,19 +255,13 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 pokeapi-pp-cli doctor
 ```
 
-Verifies configuration, credentials, and connectivity to the API.
+Verifies configuration and connectivity to the API.
 
 ## Configuration
 
 Config file: `~/.config/pokéapi-pp-cli/config.toml`
 
-Environment variables:
-- `POKÉAPI_BASIC_AUTH`
-
 ## Troubleshooting
-**Authentication errors (exit code 4)**
-- Run `pokeapi-pp-cli doctor` to check credentials
-- Verify the environment variable is set: `echo $POKÉAPI_BASIC_AUTH`
 **Not found errors (exit code 3)**
 - Check the resource ID is correct
 - Run the `list` command to see available items

@@ -536,7 +536,7 @@ func defaultSyncResources() []string {
 // this preserves the actual endpoint path like "/ISteamApps/GetAppList/v2".
 func syncResourcePath(resource string) string {
 	paths := map[string]string{
-		"v2": "/api/v2/move/",
+		"v2": "/api/v2/item/",
 	}
 	if p, ok := paths[resource]; ok {
 		return p

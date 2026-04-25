@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,37 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/store"
 )
-// looksLikeAuthError checks if an error message body contains auth-related keywords.
-func looksLikeAuthError(msg string) bool {
-	lower := strings.ToLower(msg)
-	patterns := []string{
-		`\bkey\b`,
-		`\btoken\b`,
-		`\bunauthorized\b`,
-		`\bapi_key\b`,
-		`missing.{0,20}key`,
-		`required.{0,20}key`,
-		`\bforbidden\b`,
-		`\bauthenticat`,
-		`\bcredential`,
-	}
-	for _, p := range patterns {
-		if matched, _ := regexp.MatchString(p, lower); matched {
-			return true
-		}
-	}
-	return false
-}
-
-// sanitizeErrorBody truncates and strips credential-shaped strings from error output.
-func sanitizeErrorBody(msg string) string {
-	if len(msg) > 200 {
-		msg = msg[:200] + "..."
-	}
-	credPatterns := regexp.MustCompile(`(?i)(sk-[a-zA-Z0-9]{8,}|sk_live_[a-zA-Z0-9]+|Bearer\s+[a-zA-Z0-9._\-]+|key=[a-zA-Z0-9._\-]+)`)
-	msg = credPatterns.ReplaceAllString(msg, "[REDACTED]")
-	return msg
-}
 
 // RegisterTools registers all API operations as MCP tools.
 func RegisterTools(s *server.MCPServer) {
@@ -916,20 +884,13 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			switch {
 			case strings.Contains(msg, "HTTP 409"):
 				return mcplib.NewToolResultText("already exists (no-op)"), nil
-			case strings.Contains(msg, "HTTP 400") && looksLikeAuthError(msg):
-				return mcplib.NewToolResultError("authentication error: " + sanitizeErrorBody(msg) +
-					"\nhint: the API rejected the request — this usually means auth is missing or invalid." +
-					"\n      Set your API key: export POKÉAPI_BASIC_AUTH=<your-key>" +
-					"\n      Run 'pokeapi-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 401"):
-				return mcplib.NewToolResultError("authentication failed: " + sanitizeErrorBody(msg) +
-					"\nhint: check your API key." +
-					"\n      Set it with: export POKÉAPI_BASIC_AUTH=<your-key>" +
+				return mcplib.NewToolResultError("authentication failed: " + msg +
+					"\nhint: check your API credentials." +
 					"\n      Run 'pokeapi-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 403"):
-				return mcplib.NewToolResultError("permission denied: " + sanitizeErrorBody(msg) +
+				return mcplib.NewToolResultError("permission denied: " + msg +
 					"\nhint: your credentials are valid but lack access to this resource." +
-					"\n      Set it with: export POKÉAPI_BASIC_AUTH=<your-key>" +
 					"\n      Run 'pokeapi-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 404"):
 				if method == "DELETE" {
@@ -1036,10 +997,6 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 		"description": "All the Pokémon data you'll ever need in one place, easily accessible through a modern free open-source RESTful...",
 		"archetype":   "generic",
 		"tool_count":  97,
-		"auth": map[string]any{
-			"type": "api_key",
-			"env_vars": []string{"POKÉAPI_BASIC_AUTH",  },
-		},
 		"resources": []map[string]any{
 			{
 				"name": "v2",
@@ -1055,6 +1012,20 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			"Use the sql tool for ad-hoc analysis on synced data. Run sync first to populate the local database.",
 			"Use the search tool for full-text search across all synced resources. Faster than iterating list endpoints.",
 			"Prefer sql/search over repeated API calls when the data is already synced.",
+		},
+		"unique_capabilities": []map[string]string{
+			{"name": "Pokemon profile", "command": "pokemon profile", "description": "Build an agent-ready Pokemon profile by combining core pokemon data, species metadata, type names, abilities, stats,...", "rationale": "A single profile command saves agents from stitching together the most common PokeAPI resources by hand."},
+			{"name": "Pokemon evolution path", "command": "pokemon evolution", "description": "Resolve a Pokemon's species and evolution chain into a readable evolution path.", "rationale": "Evolution requires traversing species to an evolution-chain URL and then recursively flattening chain links."},
+			{"name": "Pokemon matchups", "command": "pokemon matchups", "description": "Summarize type weaknesses, resistances, immunities, and offensive coverage for a Pokemon.", "rationale": "Type matchup analysis requires loading each type relation and combining damage multipliers."},
+			{"name": "Pokemon moves", "command": "pokemon moves", "description": "List and filter a Pokemon's moves by learn method, version group, and level learned.", "rationale": "The raw pokemon endpoint nests move version details; agents need a flattened move list."},
+			{"name": "Team coverage", "command": "team coverage", "description": "Analyze a comma-separated Pokemon team for shared weaknesses, resistances, immunities, and offensive type coverage.", "rationale": "Team analysis compounds individual type relations into a roster-level view, which raw endpoints do not provide."},
+		},
+		"playbook": []map[string]string{
+			{"topic": "Pokemon profile", "insight": "A single profile command saves agents from stitching together the most common PokeAPI resources by hand."},
+			{"topic": "Pokemon evolution path", "insight": "Evolution requires traversing species to an evolution-chain URL and then recursively flattening chain links."},
+			{"topic": "Pokemon matchups", "insight": "Type matchup analysis requires loading each type relation and combining damage multipliers."},
+			{"topic": "Pokemon moves", "insight": "The raw pokemon endpoint nests move version details; agents need a flattened move list."},
+			{"topic": "Team coverage", "insight": "Team analysis compounds individual type relations into a roster-level view, which raw endpoints do not provide."},
 		},
 	}
 	data, _ := json.MarshalIndent(ctx, "", "  ")

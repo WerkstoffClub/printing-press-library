@@ -13,31 +13,31 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/config"
-	"github.com/spf13/cobra"
 )
 
 var version = "1.0.0"
 
 type rootFlags struct {
-	asJSON       bool
-	compact      bool
-	csv          bool
-	plain        bool
-	quiet        bool
-	dryRun       bool
-	noCache      bool
-	noInput      bool
-	yes          bool
-	agent        bool
-	selectFields string
-	configPath   string
-	profileName  string
-	deliverSpec  string
-	timeout      time.Duration
-	rateLimit    float64
-	dataSource   string
+	asJSON        bool
+	compact       bool
+	csv           bool
+	plain         bool
+	quiet         bool
+	dryRun        bool
+	noCache       bool
+	noInput       bool
+	yes           bool
+	agent         bool
+	selectFields  string
+	configPath    string
+	profileName   string
+	deliverSpec   string
+	timeout       time.Duration
+	rateLimit     float64
+	dataSource    string
 	freshnessMeta any
 
 	// deliverBuf captures command output when --deliver is set to a
@@ -52,11 +52,19 @@ func Execute() error {
 
 	rootCmd := &cobra.Command{
 		Use:   "pokeapi-pp-cli",
-		Short: "Manage pokeapi resources via the pokeapi API",
-		Long: `Manage pokeapi resources via the pokeapi API.
+		Short: `Pokeapi CLI — PokeAPI as an agent-ready Pokemon knowledge graph, not just endpoint wrappers.`,
+		Long: `Pokeapi CLI — PokeAPI as an agent-ready Pokemon knowledge graph, not just endpoint wrappers.
 
-Add --agent to any command for JSON output + non-interactive mode.
-Run 'pokeapi-pp-cli doctor' to verify auth and connectivity.`,
+Highlights (not in the official API docs):
+  • pokemon profile   Build an agent-ready Pokemon profile by combining core pokemon data, species me…
+  • pokemon evolution   Resolve a Pokemon's species and evolution chain into a readable evolution path.
+  • pokemon matchups   Summarize type weaknesses, resistances, immunities, and offensive coverage for …
+  • pokemon moves   List and filter a Pokemon's moves by learn method, version group, and level lea…
+  • team coverage   Analyze a comma-separated Pokemon team for shared weaknesses, resistances, immu…
+
+Agent mode: add --agent to any command for JSON output + non-interactive mode.
+Health check: run 'pokeapi-pp-cli doctor' to verify auth and connectivity.
+See README.md or the bundled SKILL.md for recipes.`,
 		SilenceUsage: true,
 		Version:      version,
 	}
@@ -136,6 +144,8 @@ Run 'pokeapi-pp-cli doctor' to verify auth and connectivity.`,
 		return nil
 	}
 	rootCmd.AddCommand(newV2Cmd(&flags))
+	rootCmd.AddCommand(newPokemonCmd(&flags))
+	rootCmd.AddCommand(newTeamCmd(&flags))
 	rootCmd.AddCommand(newDoctorCmd(&flags))
 	rootCmd.AddCommand(newAuthCmd(&flags))
 	rootCmd.AddCommand(newAgentContextCmd(rootCmd))

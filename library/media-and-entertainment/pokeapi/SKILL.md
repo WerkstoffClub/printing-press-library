@@ -1,32 +1,67 @@
 ---
 name: pp-pokeapi
-description: "Printing Press CLI for Pokeapi. All the Pokémon data you'll ever need in one place, easily accessible through a modern free open-source RESTful..."
+description: "PokeAPI as an agent-ready Pokemon knowledge graph, not just endpoint wrappers. Trigger phrases: `look up a pokemon`, `pokemon evolution`, `pokemon type matchup`, `pokemon team coverage`, `what moves can this pokemon learn`."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
 metadata: '{"openclaw":{"requires":{"bins":["pokeapi-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/cmd/pokeapi-pp-cli@latest","bins":["pokeapi-pp-cli"],"label":"Install via go install"}]}}'
 ---
 
-# Pokeapi — Printing Press CLI
+# PokeAPI — Printing Press CLI
 
-All the Pokémon data you'll ever need in one place, easily accessible through a modern free open-source RESTful API.
+This CLI keeps the full official PokeAPI REST surface while adding graph commands for the workflows people actually ask about: profiles, evolutions, moves, matchups, and team coverage. It is public-API friendly and requires no authentication for normal reads.
 
-## What is this?
+## When to Use This CLI
 
-This is a full RESTful API linked to an extensive database detailing everything about the Pokémon main game series.
-
-We've covered everything from Pokémon to Berry Flavors.
-
-## Where do I start?
-
-We have awesome [documentation](https://pokeapi.co/docs/v2) on how to use this API. It takes minutes to get started.
-
-This API will always be publicly available and will never require any extensive setup process to consume.
-
-Created by [**Paul Hallett**](https://github.com/phalt) and other [**PokéAPI contributors***](https://github.com/PokeAPI/pokeapi#contributing) around the world. Pokémon and Pokémon character names are trademarks of Nintendo.
+Use PokeAPI when a user asks about Pokemon, moves, evolutions, types, or team composition. Prefer the graph commands for common questions; drop to v2 endpoint commands when you need raw API resources.
 
 ## When Not to Use This CLI
 
 Do not activate this CLI for requests that require creating, updating, deleting, publishing, commenting, upvoting, inviting, ordering, sending messages, booking, purchasing, or changing remote state. This printed CLI exposes read-only commands for inspection, export, sync, and analysis.
+
+## Unique Capabilities
+
+These capabilities aren't available in any other tool for this API.
+
+### Pokemon graph workflows
+
+- **`pokemon profile`** — Build an agent-ready Pokemon profile by combining core pokemon data, species metadata, type names, abilities, stats, and move counts.
+
+  _Use this when a user asks what a Pokemon is, what it does, or needs a compact structured summary._
+
+  ```bash
+  pokeapi-pp-cli pokemon profile pikachu --json
+  ```
+- **`pokemon evolution`** — Resolve a Pokemon's species and evolution chain into a readable evolution path.
+
+  _Use this when a user asks what a Pokemon evolves into or from._
+
+  ```bash
+  pokeapi-pp-cli pokemon evolution eevee --json
+  ```
+
+### Battle planning
+
+- **`pokemon matchups`** — Summarize type weaknesses, resistances, immunities, and offensive coverage for a Pokemon.
+
+  _Use this for battle planning, weakness analysis, and type coverage questions._
+
+  ```bash
+  pokeapi-pp-cli pokemon matchups charizard --json
+  ```
+- **`pokemon moves`** — List and filter a Pokemon's moves by learn method, version group, and level learned.
+
+  _Use this when a user asks what moves a Pokemon learns and how._
+
+  ```bash
+  pokeapi-pp-cli pokemon moves bulbasaur --method level-up --version-group red-blue --json
+  ```
+- **`team coverage`** — Analyze a comma-separated Pokemon team for shared weaknesses, resistances, immunities, and offensive type coverage.
+
+  _Use this when a user asks whether a team is balanced or has dangerous shared weaknesses._
+
+  ```bash
+  pokeapi-pp-cli team coverage pikachu,charizard,blastoise --json
+  ```
 
 ## Command Reference
 
@@ -141,15 +176,28 @@ pokeapi-pp-cli which "<capability in your own words>"
 
 `which` resolves a natural-language capability query to the best matching command from this CLI's curated feature index. Exit code `0` means at least one match; exit code `2` means no confident match — fall back to `--help` or use a narrower query.
 
-## Auth Setup
+## Recipes
 
-Set your API key via environment variable:
+
+### Build a Pokemon profile
 
 ```bash
-export POKÉAPI_BASIC_AUTH="<your-key>"
+pokeapi-pp-cli pokemon profile pikachu --json
 ```
 
-Or persist it in `~/.config/pokéapi-pp-cli/config.toml`.
+Combines core Pokemon fields into a compact agent-readable summary.
+
+### Check battle matchups
+
+```bash
+pokeapi-pp-cli pokemon matchups charizard --json
+```
+
+Combines type damage relations into weaknesses, resistances, and offensive coverage.
+
+## Auth Setup
+
+No authentication required.
 
 Run `pokeapi-pp-cli doctor` to verify setup.
 
@@ -228,7 +276,6 @@ Explicit flags always win over profile values; profile values win over defaults.
 | 0 | Success |
 | 2 | Usage error (wrong arguments) |
 | 3 | Resource not found |
-| 4 | Authentication required |
 | 5 | API error (upstream issue) |
 | 7 | Rate limited (wait and retry) |
 | 10 | Config error |

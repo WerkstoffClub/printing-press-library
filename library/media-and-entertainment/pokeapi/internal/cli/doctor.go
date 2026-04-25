@@ -36,29 +36,9 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			}
 
 			// Check auth
-			if cfg != nil {
-				header := cfg.AuthHeader()
-				if header == "" {
-					report["auth"] = "not configured"
-					report["auth_hint"] = "export POKÉAPI_BASIC_AUTH=<your-key>"
-				} else {
-					report["auth"] = "configured"
-					report["auth_source"] = cfg.AuthSource
-				}
-			}
+			report["auth"] = "not required"
 
 			// Check auth environment variables
-			authEnvChecked := 0
-			authEnvSet := 0
-			authEnvChecked++
-			if os.Getenv("POKÉAPI_BASIC_AUTH") != "" {
-				authEnvSet++
-			}
-			if authEnvSet == 0 {
-				report["env_vars"] = fmt.Sprintf("none set (checked %d)", authEnvChecked)
-			} else {
-				report["env_vars"] = fmt.Sprintf("%d/%d set", authEnvSet, authEnvChecked)
-			}
 
 			// Check API connectivity and validate credentials
 			if cfg != nil && cfg.BaseURL != "" {
@@ -186,9 +166,6 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				}
 			}
 			// Print auth setup hints (indented under Auth line)
-			if hint, ok := report["auth_hint"]; ok {
-				fmt.Fprintf(w, "  hint: %v\n", hint)
-			}
 			// Cache section: render after the primary health block so it
 			// sits next to version info, mirroring the JSON report layout.
 			if cacheAny, ok := report["cache"]; ok {

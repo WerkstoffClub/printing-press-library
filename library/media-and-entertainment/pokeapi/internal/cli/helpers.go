@@ -10,13 +10,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
 	"unicode"
-	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -98,38 +96,6 @@ func authErr(err error) error     { return &cliError{code: 4, err: err} }
 func apiErr(err error) error      { return &cliError{code: 5, err: err} }
 func configErr(err error) error   { return &cliError{code: 10, err: err} }
 func rateLimitErr(err error) error { return &cliError{code: 7, err: err} }
-// looksLikeAuthError checks if an error message body contains auth-related keywords.
-func looksLikeAuthError(msg string) bool {
-	lower := strings.ToLower(msg)
-	patterns := []string{
-		`\bkey\b`,
-		`\btoken\b`,
-		`\bunauthorized\b`,
-		`\bapi_key\b`,
-		`missing.{0,20}key`,
-		`required.{0,20}key`,
-		`\bforbidden\b`,
-		`\bauthenticat`,
-		`\bcredential`,
-	}
-	for _, p := range patterns {
-		if matched, _ := regexp.MatchString(p, lower); matched {
-			return true
-		}
-	}
-	return false
-}
-
-// sanitizeErrorBody truncates and strips credential-shaped strings from error output.
-func sanitizeErrorBody(msg string) string {
-	if len(msg) > 200 {
-		msg = msg[:200] + "..."
-	}
-	// Strip credential-shaped patterns
-	credPatterns := regexp.MustCompile(`(?i)(sk-[a-zA-Z0-9]{8,}|sk_live_[a-zA-Z0-9]+|Bearer\s+[a-zA-Z0-9._\-]+|key=[a-zA-Z0-9._\-]+)`)
-	msg = credPatterns.ReplaceAllString(msg, "[REDACTED]")
-	return msg
-}
 
 // accessWarning describes an API access-denial that sync converts into a
 // non-fatal warning. It carries enough structured data for the sync_warning
@@ -140,68 +106,11 @@ type accessWarning struct {
 	Message string // human-readable detail (the API's body or GraphQL error message)
 }
 
-// accessDenialPatterns matches API error bodies that indicate the request was
-// rejected for access-policy reasons rather than for input validity. Matching
-// is case-insensitive and uses word boundaries so common substrings inside
-// unrelated tokens (e.g. "author", "pagination_token", "insufficient_funds")
-// do not produce false positives. The set deliberately excludes brand names —
-// vendor-specific phrasings should be addressed at the spec/profiler level,
-// not in this universal classifier.
-var accessDenialPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`\bforbidden\b`),
-	regexp.MustCompile(`\bunauthorized\b`),
-	regexp.MustCompile(`\bnot[\s_-]?authorized\b`),
-	regexp.MustCompile(`\bpermission[\s_-]?denied\b`),
-	regexp.MustCompile(`\baccess[\s_-]?denied\b`),
-	regexp.MustCompile(`\binsufficient[\s_-]?(scope|permission|privilege)`),
-	regexp.MustCompile(`\binvalid[\s_-]?scope\b`),
-	regexp.MustCompile(`\bmissing[\s_-]?scope\b`),
-	regexp.MustCompile(`\brequires?\s+(elevated|admin|enterprise|business|workspace|enterprise[\s_-]?tier)`),
-}
-
-// looksLikeAccessDenial reports whether body text describes an access-policy
-// rejection. Use it on response-body content (apiErr.Body), not on the full
-// error string — the request path can contain words like "auth" or "tokens"
-// that would produce false positives if the whole error message were scanned.
-func looksLikeAccessDenial(body string) bool {
-	lower := strings.ToLower(body)
-	for _, p := range accessDenialPatterns {
-		if p.MatchString(lower) {
-			return true
-		}
-	}
-	return false
-}
-
-// isSyncAccessWarning classifies err as an access-denial warning suitable for
-// sync's warn-and-continue path. It returns nil, false for any error that
-// should remain a hard sync failure: HTTP 401 (token-level auth failure
-// requiring re-auth), 5xx, network errors, and HTTP 400 responses whose
-// bodies do not match an access-policy pattern.
-//
-// Recognized warning shapes:
-//   - HTTP 403 (per-resource ACL rejection)
-//   - HTTP 400 + access-denial body keyword (insufficient scope, etc.)
-//   - GraphQL response carrying only access-denial extension codes
-func isSyncAccessWarning(err error) (*accessWarning, bool) {
-	if err == nil {
-		return nil, false
-	}
-
-	var apiErr *client.APIError
-	if errors.As(err, &apiErr) {
-		switch apiErr.StatusCode {
-		case 403:
-			return &accessWarning{Status: 403, Reason: "forbidden", Message: apiErr.Body}, true
-		case 400:
-			if looksLikeAccessDenial(apiErr.Body) {
-				return &accessWarning{Status: 400, Reason: "insufficient_access", Message: apiErr.Body}, true
-			}
-		}
-	}
-
-	return nil, false
-}
+// isSyncAccessWarning is a stub: this CLI has no auth, so the API cannot
+// reject sync requests on access-policy grounds. Every error stays a hard
+// failure. Defining the function unconditionally keeps sync.go agnostic to
+// auth presence.
+func isSyncAccessWarning(err error) (*accessWarning, bool) { return nil, false }
 
 // classifyAPIError maps API errors to structured exit codes with actionable hints.
 func classifyAPIError(err error) error {
@@ -211,19 +120,12 @@ func classifyAPIError(err error) error {
 		// 409 Conflict = resource already exists. For agents retrying creates, this is success.
 		fmt.Fprintln(os.Stderr, "already exists (no-op)")
 		return nil
-	case strings.Contains(msg, "HTTP 400") && looksLikeAuthError(msg):
-		return authErr(fmt.Errorf("%w\nhint: the API rejected the request — this usually means auth is missing or invalid."+
-			"\n      Set your API key: export POKÉAPI_BASIC_AUTH=<your-key>"+
-			"\n      Run 'pokeapi-pp-cli doctor' to check auth status."+
-			"\n      Response: "+sanitizeErrorBody(msg), err))
 	case strings.Contains(msg, "HTTP 401"):
-		return authErr(fmt.Errorf("%w\nhint: check your API key."+
-			" Set it with: export POKÉAPI_BASIC_AUTH=<your-key>"+
+		return authErr(fmt.Errorf("%w\nhint: check your API credentials."+
 			"\n      Run 'pokeapi-pp-cli doctor' to check auth status.", err))
 	case strings.Contains(msg, "HTTP 403"):
 		return authErr(fmt.Errorf("%w\nhint: permission denied. Your credentials are valid but lack access to this resource."+
 			"\n      Check that your API key has the required permissions."+
-			"\n      Set it with: export POKÉAPI_BASIC_AUTH=<your-key>"+
 			"\n      Run 'pokeapi-pp-cli doctor' to check auth status.", err))
 	case strings.Contains(msg, "HTTP 404"):
 		return notFoundErr(fmt.Errorf("%w\nhint: resource not found. Run the 'list' command to see available items", err))

@@ -23,7 +23,6 @@ type Config struct {
 	ClientID       string `toml:"client_id"`
 	ClientSecret   string `toml:"client_secret"`
 	Path           string `toml:"-"`
-	PokéapiBasicAuth string `toml:"basic_auth"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -51,10 +50,6 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// Env var overrides
-	if v := os.Getenv("POKÉAPI_BASIC_AUTH"); v != "" {
-		cfg.PokéapiBasicAuth = v
-		cfg.AuthSource = "env:POKÉAPI_BASIC_AUTH"
-	}
 
 	// Base URL override (used by printing-press verify to point at mock/test servers)
 	if v := os.Getenv("POKEAPI_BASE_URL"); v != "" {
@@ -67,18 +62,7 @@ func (c *Config) AuthHeader() string {
 	if c.AuthHeaderVal != "" {
 		return c.AuthHeaderVal
 	}
-	token := c.PokéapiBasicAuth
-	if token == "" {
-		return ""
-	}
-	if c.PokéapiBasicAuth == "" {
-		return ""
-	}
-	replacements := map[string]string{
-		"basic_auth": c.PokéapiBasicAuth,
-		"POKÉAPI_BASIC_AUTH": c.PokéapiBasicAuth,
-	}
-	return applyAuthFormat("Basic {username}:{password}", replacements)
+	return ""
 }
 
 func applyAuthFormat(format string, replacements map[string]string) string {

@@ -94,9 +94,8 @@ reading source. Schema is versioned via schema_version.`,
 
 func buildAgentContext(rootCmd *cobra.Command) agentContext {
 	envVars := []string{
-		"POKÉAPI_BASIC_AUTH",
 	}
-	authMode := "api_key"
+	authMode := "none"
 	if authMode == "" {
 		authMode = "none"
 	}
