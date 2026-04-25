@@ -10,8 +10,7 @@
   "mcp_public_tool_count": 97,
   "mcp_ready": "full",
   "api_version": "2.7.0",
-  "auth_type": "api_key",
-  "auth_env_vars": [
-    "POKÉAPI_BASIC_AUTH"
-  ]
+  "auth_type": "none",
+  "auth_env_vars": [],
+  "spec_format": "openapi3"
 }

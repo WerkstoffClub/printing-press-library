@@ -263,11 +263,10 @@
         "transport": "stdio",
         "tool_count": 97,
         "public_tool_count": 97,
-        "auth_type": "api_key",
-        "env_vars": [
-          "POK\u00c9API_BASIC_AUTH"
-        ],
-        "mcp_ready": "full"
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
       }
     },
     {
