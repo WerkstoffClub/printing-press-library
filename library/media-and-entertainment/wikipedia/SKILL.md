@@ -20,7 +20,7 @@ Do not activate this CLI for requests that require creating, updating, deleting,
 
 **feed** — Manage feed
 
-- `wikipedia-pp-cli feed get-on-this-day` — Events on this day
+- `wikipedia-pp-cli feed` — Events on this day
 
 **page** — Article content and metadata
 
