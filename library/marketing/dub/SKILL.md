@@ -200,7 +200,7 @@ These capabilities aren't available in any other tool for this API.
 
 **qr** — Manage qr
 
-- `dub-pp-cli qr get-qrcode` — Retrieve a QR code
+- `dub-pp-cli qr` — Retrieve a QR code (leaf shortcut for the `qr/get-qrcode` operation)
 
 **tags** — Manage tags
 
@@ -211,7 +211,7 @@ These capabilities aren't available in any other tool for this API.
 
 **tokens** — Manage tokens
 
-- `dub-pp-cli tokens create-referrals-embed` — Create a referrals embed token
+- `dub-pp-cli tokens` — Create a referrals embed token (leaf shortcut for the `tokens/embed/referrals/links` operation)
 
 **track** — Manage track
 
