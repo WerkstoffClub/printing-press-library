@@ -120,7 +120,7 @@ func newCookbookCmd(flags *rootFlags) *cobra.Command {
 func newGroceryListCmd(flags *rootFlags) *cobra.Command {
 	var flagOutput string
 	cmd := &cobra.Command{
-		Use:   "grocery-list <urls...>",
+		Use:   "grocery-list <url> [<url>...]",
 		Short: "Aggregate ingredients from many recipes into a deduped shopping list",
 		Long: "Fetches each recipe URL (from cache when available, live otherwise),\n" +
 			"parses ingredient lines into qty+unit+name, sums quantities for matching\n" +

@@ -77,7 +77,7 @@ These capabilities aren't available in any other tool for this API.
   _Use this at the end of a meal plan — one call replaces five scrolls through ingredient lists._
 
   ```bash
-  allrecipes-pp-cli grocery-list https://www.allrecipes.com/recipe/10813/best-brownies/ https://www.allrecipes.com/recipe/16354/easy-meatloaf/ --agent
+  allrecipes-pp-cli grocery-list https://www.allrecipes.com/recipe/9599/quick-and-easy-brownies/ https://www.allrecipes.com/recipe/16354/easy-meatloaf/ --agent
   ```
 
 ### Reachability mitigation
