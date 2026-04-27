@@ -14,44 +14,44 @@ API for interacting with Firecrawl services to perform web scraping and crawling
 
 **batch** — Manage batch
 
-- `firecrawl-pp-cli batch cancel-scrape <id>` — Cancel a batch scrape job
-- `firecrawl-pp-cli batch get-scrape-errors <id>` — Get the errors of a batch scrape job
-- `firecrawl-pp-cli batch get-scrape-status <id>` — Get the status of a batch scrape job
+- `firecrawl-pp-cli batch cancel-scrape` — Cancel a batch scrape job
+- `firecrawl-pp-cli batch get-scrape-errors` — Get the errors of a batch scrape job
+- `firecrawl-pp-cli batch get-scrape-status` — Get the status of a batch scrape job
 - `firecrawl-pp-cli batch scrape-and-extract-from-urls` — Scrape multiple URLs and optionally extract information using an LLM
 
 **crawl** — Manage crawl
 
-- `firecrawl-pp-cli crawl cancel <id>` — Cancel a crawl job
+- `firecrawl-pp-cli crawl cancel` — Cancel a crawl job
 - `firecrawl-pp-cli crawl get-active` — Get all active crawls for the authenticated team
-- `firecrawl-pp-cli crawl get-status <id>` — Get the status of a crawl job
+- `firecrawl-pp-cli crawl get-status` — Get the status of a crawl job
 - `firecrawl-pp-cli crawl urls` — Crawl multiple URLs based on options
 
 **deep-research** — Manage deep research
 
-- `firecrawl-pp-cli deep-research get-status <id>` — Get the status and results of a deep research operation
+- `firecrawl-pp-cli deep-research get-status` — Get the status and results of a deep research operation
 - `firecrawl-pp-cli deep-research start` — Start a deep research operation on a query
 
 **extract** — Manage extract
 
 - `firecrawl-pp-cli extract data` — Extract structured data from pages using LLMs
-- `firecrawl-pp-cli extract get-status <id>` — Get the status of an extract job
+- `firecrawl-pp-cli extract get-status` — Get the status of an extract job
 
 **llmstxt** — Manage llmstxt
 
 - `firecrawl-pp-cli llmstxt generate-llms-txt` — Generate LLMs.txt for a website
-- `firecrawl-pp-cli llmstxt get-llms-txt-status <id>` — Get the status and results of an LLMs.txt generation job
+- `firecrawl-pp-cli llmstxt get-llms-txt-status` — Get the status and results of an LLMs.txt generation job
 
 **map** — Manage map
 
-- `firecrawl-pp-cli map` — Map multiple URLs based on options
+- `firecrawl-pp-cli map urls` — Map multiple URLs based on options
 
 **scrape** — Manage scrape
 
-- `firecrawl-pp-cli scrape` — Scrape a single URL and optionally extract information using an LLM
+- `firecrawl-pp-cli scrape and-extract-from-url` — Scrape a single URL and optionally extract information using an LLM
 
 **search** — Manage search
 
-- `firecrawl-pp-cli search <query>` — Search and optionally scrape search results
+- `firecrawl-pp-cli search and-scrape` — Search and optionally scrape search results
 
 **team** — Manage team
 
@@ -89,7 +89,7 @@ Add `--agent` to any command. Expands to: `--json --compact --no-input --no-colo
 - **Filterable** — `--select` keeps a subset of fields. Dotted paths descend into nested structures; arrays traverse element-wise. Critical for keeping context small on verbose APIs:
 
   ```bash
-  firecrawl-pp-cli batch get-scrape-status crawl_123 --agent --select id,status,completed
+  firecrawl-pp-cli batch cancel-scrape 550e8400-e29b-41d4-a716-446655440000 --agent --select id,name,status
   ```
 - **Previewable** — `--dry-run` shows the request without sending
 - **Offline-friendly** — sync/search commands can use the local SQLite store when available
@@ -140,7 +140,7 @@ A profile is a saved set of flag values, reused across invocations. Use it when 
 
 ```
 firecrawl-pp-cli profile save briefing --json
-firecrawl-pp-cli --profile briefing batch get-scrape-status crawl_123
+firecrawl-pp-cli --profile briefing batch cancel-scrape 550e8400-e29b-41d4-a716-446655440000
 firecrawl-pp-cli profile list --json
 firecrawl-pp-cli profile show briefing
 firecrawl-pp-cli profile delete briefing --yes
