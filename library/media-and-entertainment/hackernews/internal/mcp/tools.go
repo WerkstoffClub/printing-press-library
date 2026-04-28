@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/store"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -325,10 +325,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "hackernews",
-		"description": "Hacker News from your terminal — with a local store, full-text search, and agent-native output no other HN tool has",
-		"archetype":   "generic",
-		"tool_count":  10,
+		"api":          "hackernews",
+		"description":  "Hacker News from your terminal — with a local store, full-text search, and agent-native output no other HN tool has",
+		"archetype":    "generic",
+		"tool_count":   10,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion hackernews-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{

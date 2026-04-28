@@ -8,16 +8,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/allrecipes/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/allrecipes/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/allrecipes/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -237,10 +237,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "allrecipes",
-		"description": "Allrecipes Pocket — every Allrecipes recipe in your terminal: cached as data, with pantry-aware search,...",
-		"archetype":   "generic",
-		"tool_count":  2,
+		"api":          "allrecipes",
+		"description":  "Allrecipes Pocket — every Allrecipes recipe in your terminal: cached as data, with pantry-aware search,...",
+		"archetype":    "generic",
+		"tool_count":   2,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion allrecipes-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{

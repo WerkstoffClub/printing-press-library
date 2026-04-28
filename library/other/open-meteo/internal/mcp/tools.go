@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,8 +19,8 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/other/open-meteo/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/other/open-meteo/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/other/open-meteo/internal/store"
-	"os/exec"
 )
+
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
 func looksLikeAuthError(msg string) bool {
 	lower := strings.ToLower(msg)
@@ -58,7 +59,7 @@ func RegisterTools(s *server.MCPServer) {
 		mcplib.NewTool("forecast_list",
 			mcplib.WithDescription("7 day weather forecast for coordinates Returns ListResponse."),
 		),
-		makeAPIHandler("GET", "/v1/forecast", []string{ }),
+		makeAPIHandler("GET", "/v1/forecast", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -209,6 +210,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "open-meteo-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -265,21 +267,21 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "open-meteo",
-		"description": "Open-Meteo offers free weather forecast APIs for open-source developers and non-commercial use. No API key is required.",
-		"archetype":   "generic",
-		"tool_count":  1,
+		"api":          "open-meteo",
+		"description":  "Open-Meteo offers free weather forecast APIs for open-source developers and non-commercial use. No API key is required.",
+		"archetype":    "generic",
+		"tool_count":   1,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion open-meteo-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
-			"type": "api_key",
-			"env_vars": []string{"OPEN_METEO_APIS_API_KEY",  },
+			"type":     "api_key",
+			"env_vars": []string{"OPEN_METEO_APIS_API_KEY"},
 		},
 		"resources": []map[string]any{
 			{
-				"name": "forecast",
+				"name":        "forecast",
 				"description": "Manage forecast",
-				"endpoints": []string{"list",  },
-				"syncable": true,
+				"endpoints":   []string{"list"},
+				"syncable":    true,
 			},
 		},
 		"query_tips": []string{

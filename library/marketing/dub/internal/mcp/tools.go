@@ -8,17 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/cliutil"
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -809,10 +809,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "dub",
-		"description": "Dub is the modern link attribution platform for short links, conversion tracking, and affiliate programs.",
-		"archetype":   "payments",
-		"tool_count":  53,
+		"api":          "dub",
+		"description":  "Dub is the modern link attribution platform for short links, conversion tracking, and affiliate programs.",
+		"archetype":    "payments",
+		"tool_count":   53,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion dub-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "bearer_token",

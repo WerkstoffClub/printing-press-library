@@ -226,10 +226,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "producthunt",
-		"description": "Token-free Product Hunt CLI — browse today's featured launches, sync locally, and compose views the website itself...",
-		"archetype":   "generic",
-		"tool_count":  1,
+		"api":          "producthunt",
+		"description":  "Token-free Product Hunt CLI — browse today's featured launches, sync locally, and compose views the website itself...",
+		"archetype":    "generic",
+		"tool_count":   1,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion producthunt-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{

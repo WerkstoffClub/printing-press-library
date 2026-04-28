@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,7 +19,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/store"
-	"os/exec"
 )
 
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
@@ -636,10 +636,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "pagliacci",
-		"description": "CLI for the Pagliacci Pizza ordering API. Browse stores, menus, and available slices; manage your cart, place...",
-		"archetype":   "crm",
-		"tool_count":  57,
+		"api":          "pagliacci",
+		"description":  "CLI for the Pagliacci Pizza ordering API. Browse stores, menus, and available slices; manage your cart, place...",
+		"archetype":    "crm",
+		"tool_count":   57,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion pagliacci-pizza-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type": "composed",

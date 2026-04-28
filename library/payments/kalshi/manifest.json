@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "kalshi-pp-mcp",
   "display_name": "Kalshi",
-  "version": "1.2.2-0.20260411023050-cbcd67dbddd8+dirty",
+  "version": "1.2.2",
   "description": "Trade prediction markets, track portfolios, and analyze odds on Kalshi from the command line",
   "author": {
     "name": "CLI Printing Press"

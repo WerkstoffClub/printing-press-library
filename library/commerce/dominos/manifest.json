@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "dominos-pp-mcp",
   "display_name": "Dominos Pizza",
-  "version": "2.3.8-0.20260426092231-8aad8d858bf7+dirty",
+  "version": "2.3.8",
   "description": "Order pizza, browse menus, optimize deals, and track delivery from the terminal - with a local SQLite store for reorder, analytics, and cross-store price comparison.",
   "author": {
     "name": "CLI Printing Press"

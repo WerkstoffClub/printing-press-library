@@ -4,13 +4,14 @@
 package mcp
 
 import (
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 // RegisterTools registers all API operations as MCP tools.

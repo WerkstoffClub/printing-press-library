@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/wikipedia/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/wikipedia/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/wikipedia/internal/store"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -29,34 +29,34 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("month", mcplib.Required(), mcplib.Description("Month")),
 			mcplib.WithString("day", mcplib.Required(), mcplib.Description("Day")),
 		),
-		makeAPIHandler("GET", "/feed/onthisday/{type}/{month}/{day}", []string{"day", }),
+		makeAPIHandler("GET", "/feed/onthisday/{type}/{month}/{day}", []string{"day"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-html",
 			mcplib.WithDescription("Get article HTML"),
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Title")),
 		),
-		makeAPIHandler("GET", "/page/html/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/html/{title}", []string{"title"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-media",
 			mcplib.WithDescription("Get article media Returns MediaList."),
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Title")),
 		),
-		makeAPIHandler("GET", "/page/media-list/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/media-list/{title}", []string{"title"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-random",
 			mcplib.WithDescription("Get a random article summary Returns Summary."),
 		),
-		makeAPIHandler("GET", "/page/random/summary", []string{ }),
+		makeAPIHandler("GET", "/page/random/summary", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-related",
 			mcplib.WithDescription("Get related articles Returns RelatedPages."),
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Title")),
 		),
-		makeAPIHandler("GET", "/page/related/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/related/{title}", []string{"title"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-summary",
@@ -64,7 +64,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Article title (underscores for spaces, e.g. 'Python_(programming_language)')")),
 			mcplib.WithString("redirect", mcplib.Description("Follow redirects")),
 		),
-		makeAPIHandler("GET", "/page/summary/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/summary/{title}", []string{"title"}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -208,6 +208,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "wikipedia-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -264,23 +265,23 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "wikipedia",
-		"description": "Wikipedia REST API. Get article summaries, search, browse related topics, and access on-this-day events. No...",
-		"archetype":   "content",
-		"tool_count":  6,
+		"api":          "wikipedia",
+		"description":  "Wikipedia REST API. Get article summaries, search, browse related topics, and access on-this-day events. No...",
+		"archetype":    "content",
+		"tool_count":   6,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion wikipedia-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "feed",
+				"name":        "feed",
 				"description": "Manage feed",
-				"endpoints": []string{"get-on-this-day",  },
-				"searchable": true,
+				"endpoints":   []string{"get-on-this-day"},
+				"searchable":  true,
 			},
 			{
-				"name": "page",
+				"name":        "page",
 				"description": "Article content and metadata",
-				"endpoints": []string{"get-html", "get-media", "get-random", "get-related", "get-summary",  },
-				"searchable": true,
+				"endpoints":   []string{"get-html", "get-media", "get-random", "get-related", "get-summary"},
+				"searchable":  true,
 			},
 		},
 		"query_tips": []string{

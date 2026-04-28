@@ -8,17 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/commerce/dominos/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/commerce/dominos/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/commerce/dominos/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
-	"os/exec"
 )
 
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
@@ -383,10 +383,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "dominos",
-		"description": "Domino's Pizza CLI - order pizza, browse menus, track orders, and manage rewards from the terminal",
-		"archetype":   "generic",
-		"tool_count":  19,
+		"api":          "dominos",
+		"description":  "Domino's Pizza CLI - order pizza, browse menus, track orders, and manage rewards from the terminal",
+		"archetype":    "generic",
+		"tool_count":   19,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion dominos-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "api_key",

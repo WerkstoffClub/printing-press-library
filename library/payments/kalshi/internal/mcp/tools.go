@@ -1043,10 +1043,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "kalshi-trade-manual",
-		"description": "Manually defined OpenAPI spec for endpoints being migrated to spec-first approach",
-		"archetype":   "project-management",
-		"tool_count":  89,
+		"api":          "kalshi-trade-manual",
+		"description":  "Manually defined OpenAPI spec for endpoints being migrated to spec-first approach",
+		"archetype":    "project-management",
+		"tool_count":   89,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion kalshi-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "api_key",

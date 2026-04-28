@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/pypi/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/pypi/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/pypi/internal/store"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -27,7 +27,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDescription("Get package info (latest version) Returns PackageResponse."),
 			mcplib.WithString("package", mcplib.Required(), mcplib.Description("Package name (e.g. 'requests', 'flask')")),
 		),
-		makeAPIHandler("GET", "/pypi/{package}/json", []string{"package", }),
+		makeAPIHandler("GET", "/pypi/{package}/json", []string{"package"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("pypi_json_get-package-version-info",
@@ -35,19 +35,19 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("package", mcplib.Required(), mcplib.Description("Package name")),
 			mcplib.WithString("version", mcplib.Required(), mcplib.Description("Version string (e.g. '2.31.0')")),
 		),
-		makeAPIHandler("GET", "/pypi/{package}/{version}/json", []string{"package","version", }),
+		makeAPIHandler("GET", "/pypi/{package}/{version}/json", []string{"package", "version"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("rss_newest-packages",
 			mcplib.WithDescription("Newest packages Returns Rssfeed."),
 		),
-		makeAPIHandler("GET", "/rss/packages.xml", []string{ }),
+		makeAPIHandler("GET", "/rss/packages.xml", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("rss_recent-updates",
 			mcplib.WithDescription("Recent package updates Returns Rssfeed."),
 		),
-		makeAPIHandler("GET", "/rss/updates.xml", []string{ }),
+		makeAPIHandler("GET", "/rss/updates.xml", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -191,6 +191,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "pypi-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -247,21 +248,21 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "pypi",
-		"description": "PyPI JSON API. Look up Python package metadata, versions, release files, and vulnerability data. Browse recent...",
-		"archetype":   "generic",
-		"tool_count":  4,
+		"api":          "pypi",
+		"description":  "PyPI JSON API. Look up Python package metadata, versions, release files, and vulnerability data. Browse recent...",
+		"archetype":    "generic",
+		"tool_count":   4,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion pypi-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "pypi",
+				"name":        "pypi",
 				"description": "Manage pypi",
-				"endpoints": []string{ },
+				"endpoints":   []string{},
 			},
 			{
-				"name": "rss",
+				"name":        "rss",
 				"description": "RSS feeds for recent updates and newest packages",
-				"endpoints": []string{"newest-packages", "recent-updates",  },
+				"endpoints":   []string{"newest-packages", "recent-updates"},
 			},
 		},
 		"query_tips": []string{

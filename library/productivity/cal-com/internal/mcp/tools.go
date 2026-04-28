@@ -8,17 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/productivity/cal-com/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/productivity/cal-com/internal/cliutil"
 	"github.com/mvanhorn/printing-press-library/library/productivity/cal-com/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/productivity/cal-com/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -2727,10 +2727,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "cal-com",
-		"description": "Cal.com v2 API — scheduling infrastructure. Authenticate with a Bearer token (API key from Settings > Developer >...",
-		"archetype":   "generic",
-		"tool_count":  285,
+		"api":          "cal-com",
+		"description":  "Cal.com v2 API — scheduling infrastructure. Authenticate with a Bearer token (API key from Settings > Developer >...",
+		"archetype":    "generic",
+		"tool_count":   285,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion cal-com-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "bearer_token",

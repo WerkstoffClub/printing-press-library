@@ -347,10 +347,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "yahoo-finance",
-		"description": "Yahoo Finance CLI — market data, quotes, fundamentals, options, news",
-		"archetype":   "generic",
-		"tool_count":  11,
+		"api":          "yahoo-finance",
+		"description":  "Yahoo Finance CLI — market data, quotes, fundamentals, options, news",
+		"archetype":    "generic",
+		"tool_count":   11,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion yahoo-finance-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{

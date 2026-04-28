@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/sales-and-crm/contact-goat/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/sales-and-crm/contact-goat/internal/config"
 	hpapi "github.com/mvanhorn/printing-press-library/library/sales-and-crm/contact-goat/internal/happenstance/api"
 	"github.com/mvanhorn/printing-press-library/library/sales-and-crm/contact-goat/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
@@ -410,10 +410,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "contact-goat",
-		"description": "Sniffed endpoints from happenstance.ai web app (signed-in browser session). Uses Clerk session cookies for auth....",
-		"archetype":   "content",
-		"tool_count":  16,
+		"api":          "contact-goat",
+		"description":  "Sniffed endpoints from happenstance.ai web app (signed-in browser session). Uses Clerk session cookies for auth....",
+		"archetype":    "content",
+		"tool_count":   16,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion contact-goat-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "api_key",

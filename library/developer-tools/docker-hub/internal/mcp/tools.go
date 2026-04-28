@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/docker-hub/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/docker-hub/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/docker-hub/internal/store"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -28,7 +28,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("namespace", mcplib.Required(), mcplib.Description("Namespace (use 'library' for official images)")),
 			mcplib.WithString("repository", mcplib.Required(), mcplib.Description("Repository name")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/", []string{"namespace","repository", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/", []string{"namespace", "repository"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("repositories_dockerfile_get",
@@ -36,7 +36,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("namespace", mcplib.Required(), mcplib.Description("Namespace")),
 			mcplib.WithString("repository", mcplib.Required(), mcplib.Description("Repository")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/dockerfile/", []string{"namespace","repository", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/dockerfile/", []string{"namespace", "repository"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("repositories_tags_get",
@@ -45,7 +45,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("repository", mcplib.Required(), mcplib.Description("Repository")),
 			mcplib.WithString("tag", mcplib.Required(), mcplib.Description("Tag name (e.g. 'latest', '1.25', 'alpine')")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/{tag}/", []string{"namespace","repository","tag", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/{tag}/", []string{"namespace", "repository", "tag"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("repositories_tags_list",
@@ -56,7 +56,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("page", mcplib.Description("Page")),
 			mcplib.WithString("ordering", mcplib.Description("Sort order")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/", []string{"namespace","repository", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/", []string{"namespace", "repository"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("search_repositories",
@@ -67,7 +67,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("is_official", mcplib.Description("Filter to official images only")),
 			mcplib.WithString("is_automated", mcplib.Description("Filter to automated builds only")),
 		),
-		makeAPIHandler("GET", "/v2/search/repositories/", []string{ }),
+		makeAPIHandler("GET", "/v2/search/repositories/", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -211,6 +211,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "docker-hub-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -267,24 +268,24 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "docker-hub",
-		"description": "Docker Hub public API. Search container images, browse tags, check sizes, inspect Dockerfiles, and explore the...",
-		"archetype":   "generic",
-		"tool_count":  5,
+		"api":          "docker-hub",
+		"description":  "Docker Hub public API. Search container images, browse tags, check sizes, inspect Dockerfiles, and explore the...",
+		"archetype":    "generic",
+		"tool_count":   5,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion docker-hub-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "repositories",
+				"name":        "repositories",
 				"description": "Repository metadata and details",
-				"endpoints": []string{"get-repository",  },
-				"searchable": true,
+				"endpoints":   []string{"get-repository"},
+				"searchable":  true,
 			},
 			{
-				"name": "search",
+				"name":        "search",
 				"description": "Search across all Docker Hub repositories",
-				"endpoints": []string{"repositories",  },
-				"syncable": true,
-				"searchable": true,
+				"endpoints":   []string{"repositories"},
+				"syncable":    true,
+				"searchable":  true,
 			},
 		},
 		"query_tips": []string{

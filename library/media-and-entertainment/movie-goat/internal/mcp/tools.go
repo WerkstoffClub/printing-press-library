@@ -510,10 +510,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "movie",
-		"description": "The movie goat CLI — search, discover, and track movies and TV shows using TMDb and OMDb",
-		"archetype":   "generic",
-		"tool_count":  25,
+		"api":          "movie",
+		"description":  "The movie goat CLI — search, discover, and track movies and TV shows using TMDb and OMDb",
+		"archetype":    "generic",
+		"tool_count":   25,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion movie-goat-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "bearer_token",

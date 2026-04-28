@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
+	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/travel/flightgoat/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/travel/flightgoat/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/travel/flightgoat/internal/store"
-	mcplib "github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 )
 
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
@@ -831,7 +831,7 @@ func handleAbout(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolR
 		"api":               "flightgoat",
 		"description":       "# Introduction AeroAPI is a simple, query-based API that gives software developers access to a variety of...",
 		"tool_count":        58,
-		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion flightgoat-pp-cli binary; the MCP cannot invoke them.",
+		"tool_surface":      "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion flightgoat-pp-cli binary; the MCP cannot invoke them.",
 		"public_tool_count": 0,
 		"auth": map[string]any{
 			"type":     "api_key",

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,7 +19,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/store"
-	"os/exec"
 )
 
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
@@ -288,10 +288,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "recipe-goat",
-		"description": "Recipe GOAT — find the best version of any recipe across 37 trusted sites, with offline cookbook, pantry match,...",
-		"archetype":   "generic",
-		"tool_count":  3,
+		"api":          "recipe-goat",
+		"description":  "Recipe GOAT — find the best version of any recipe across 37 trusted sites, with offline cookbook, pantry match,...",
+		"archetype":    "generic",
+		"tool_count":   3,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion recipe-goat-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
 			"type":     "api_key",

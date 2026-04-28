@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/company-goat/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/company-goat/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/company-goat/internal/store"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -228,10 +228,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "company",
-		"description": "Look up startups across SEC Form D, GitHub, Hacker News, Companies House, YC, Wikidata, and DNS in one command....",
-		"archetype":   "generic",
-		"tool_count":  1,
+		"api":          "company",
+		"description":  "Look up startups across SEC Form D, GitHub, Hacker News, Companies House, YC, Wikidata, and DNS in one command....",
+		"archetype":    "generic",
+		"tool_count":   1,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion company-goat-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{

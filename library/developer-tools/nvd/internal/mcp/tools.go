@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/nvd/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/nvd/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/nvd/internal/store"
-	"os/exec"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -27,7 +27,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDescription("Search CPE names Returns CpeSearchResults."),
 			mcplib.WithString("cpeMatchString", mcplib.Description("Partial CPE match pattern")),
 		),
-		makeAPIHandler("GET", "/rest/json/cpes/2.0", []string{ }),
+		makeAPIHandler("GET", "/rest/json/cpes/2.0", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("json_search-cves",
@@ -40,7 +40,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("hasKev", mcplib.Description("Filter to CVEs in Known Exploited Vulnerabilities catalog")),
 			mcplib.WithString("isVulnerable", mcplib.Description("true: only CVEs with confirmed vulnerable CPEs")),
 		),
-		makeAPIHandler("GET", "/rest/json/cves/2.0", []string{ }),
+		makeAPIHandler("GET", "/rest/json/cves/2.0", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -184,6 +184,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "nvd-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -240,18 +241,18 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "nvd",
-		"description": "The NVD is the U.S. government repository of standards-based vulnerability management data. Search CVEs by keyword,...",
-		"archetype":   "generic",
-		"tool_count":  2,
+		"api":          "nvd",
+		"description":  "The NVD is the U.S. government repository of standards-based vulnerability management data. Search CVEs by keyword,...",
+		"archetype":    "generic",
+		"tool_count":   2,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion nvd-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "json",
+				"name":        "json",
 				"description": "Manage json",
-				"endpoints": []string{"search-cpes", "search-cves",  },
-				"syncable": true,
-				"searchable": true,
+				"endpoints":   []string{"search-cpes", "search-cves"},
+				"syncable":    true,
+				"searchable":  true,
 			},
 		},
 		"query_tips": []string{

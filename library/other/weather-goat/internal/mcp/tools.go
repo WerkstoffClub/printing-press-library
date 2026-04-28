@@ -273,10 +273,10 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "weather",
-		"description": "Weather GOAT — forecasts, alerts, air quality, and activity verdicts powered by Open-Meteo and NWS",
-		"archetype":   "generic",
-		"tool_count":  5,
+		"api":          "weather",
+		"description":  "Weather GOAT — forecasts, alerts, air quality, and activity verdicts powered by Open-Meteo and NWS",
+		"archetype":    "generic",
+		"tool_count":   5,
 		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion weather-goat-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
