@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -28,34 +29,34 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("month", mcplib.Required(), mcplib.Description("Month")),
 			mcplib.WithString("day", mcplib.Required(), mcplib.Description("Day")),
 		),
-		makeAPIHandler("GET", "/feed/onthisday/{type}/{month}/{day}", []string{"day", }),
+		makeAPIHandler("GET", "/feed/onthisday/{type}/{month}/{day}", []string{"day"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-html",
 			mcplib.WithDescription("Get article HTML"),
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Title")),
 		),
-		makeAPIHandler("GET", "/page/html/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/html/{title}", []string{"title"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-media",
 			mcplib.WithDescription("Get article media Returns MediaList."),
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Title")),
 		),
-		makeAPIHandler("GET", "/page/media-list/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/media-list/{title}", []string{"title"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-random",
 			mcplib.WithDescription("Get a random article summary Returns Summary."),
 		),
-		makeAPIHandler("GET", "/page/random/summary", []string{ }),
+		makeAPIHandler("GET", "/page/random/summary", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-related",
 			mcplib.WithDescription("Get related articles Returns RelatedPages."),
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Title")),
 		),
-		makeAPIHandler("GET", "/page/related/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/related/{title}", []string{"title"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("page_get-summary",
@@ -63,7 +64,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("title", mcplib.Required(), mcplib.Description("Article title (underscores for spaces, e.g. 'Python_(programming_language)')")),
 			mcplib.WithString("redirect", mcplib.Description("Follow redirects")),
 		),
-		makeAPIHandler("GET", "/page/summary/{title}", []string{"title", }),
+		makeAPIHandler("GET", "/page/summary/{title}", []string{"title"}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -207,6 +208,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "wikipedia-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -263,22 +265,23 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "wikipedia",
-		"description": "Wikipedia REST API. Get article summaries, search, browse related topics, and access on-this-day events. No...",
-		"archetype":   "content",
-		"tool_count":  6,
+		"api":          "wikipedia",
+		"description":  "Wikipedia REST API. Get article summaries, search, browse related topics, and access on-this-day events. No...",
+		"archetype":    "content",
+		"tool_count":   6,
+		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion wikipedia-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "feed",
+				"name":        "feed",
 				"description": "Manage feed",
-				"endpoints": []string{"get-on-this-day",  },
-				"searchable": true,
+				"endpoints":   []string{"get-on-this-day"},
+				"searchable":  true,
 			},
 			{
-				"name": "page",
+				"name":        "page",
 				"description": "Article content and metadata",
-				"endpoints": []string{"get-html", "get-media", "get-random", "get-related", "get-summary",  },
-				"searchable": true,
+				"endpoints":   []string{"get-html", "get-media", "get-random", "get-related", "get-summary"},
+				"searchable":  true,
 			},
 		},
 		"query_tips": []string{
@@ -291,4 +294,91 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 	}
 	data, _ := json.MarshalIndent(ctx, "", "  ")
 	return mcplib.NewToolResultText(string(data)), nil
+}
+
+// RegisterNovelFeatureTools registers MCP tools that shell out to the
+// companion CLI binary. Empty body when the spec has no novel features.
+func RegisterNovelFeatureTools(s *server.MCPServer) {
+	s.AddTool(
+		mcplib.NewTool("page_get_summary",
+			mcplib.WithDescription("Fetch concise Wikipedia article summaries for quick research and agent context."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("page get-summary"),
+	)
+	s.AddTool(
+		mcplib.NewTool("page_get_related",
+			mcplib.WithDescription("Find related pages from a seed article to expand research paths."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("page get-related"),
+	)
+	s.AddTool(
+		mcplib.NewTool("feed",
+			mcplib.WithDescription("Explore on-this-day events as a ready-made discovery workflow."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("feed"),
+	)
+}
+
+// siblingCLIPath resolves the companion CLI via sibling-of-executable,
+// WIKIPEDIA_CLI_PATH env var, then PATH.
+func siblingCLIPath() (string, error) {
+	const cliName = "wikipedia-pp-cli"
+	if exe, err := os.Executable(); err == nil {
+		candidate := filepath.Join(filepath.Dir(exe), cliName)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	if v := os.Getenv("WIKIPEDIA_CLI_PATH"); v != "" {
+		return v, nil
+	}
+	return exec.LookPath(cliName)
+}
+
+// shellOutToCLI returns an MCP tool handler that runs commandSpec against
+// the companion CLI. Resolves the binary path and pre-splits commandSpec
+// at registration so the per-call work is just user-arg split + exec.
+func shellOutToCLI(commandSpec string) server.ToolHandlerFunc {
+	cliPath, lookupErr := siblingCLIPath()
+	prefixArgs := splitShellArgs(commandSpec)
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		if lookupErr != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("companion CLI binary not found: %v\nTried sibling lookup, WIKIPEDIA_CLI_PATH env var, and PATH.", lookupErr)), nil
+		}
+		userArgs, _ := req.GetArguments()["args"].(string)
+		finalArgs := append(append([]string{}, prefixArgs...), splitShellArgs(userArgs)...)
+		cmd := exec.CommandContext(ctx, cliPath, finalArgs...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return mcplib.NewToolResultError(string(out)), nil
+		}
+		return mcplib.NewToolResultText(string(out)), nil
+	}
+}
+
+// splitShellArgs whitespace-splits with double-quoted-token preservation.
+func splitShellArgs(s string) []string {
+	var tokens []string
+	var cur []rune
+	inQuote := false
+	for _, r := range s {
+		switch {
+		case r == '"':
+			inQuote = !inQuote
+		case (r == ' ' || r == '\t') && !inQuote:
+			if len(cur) > 0 {
+				tokens = append(tokens, string(cur))
+				cur = cur[:0]
+			}
+		default:
+			cur = append(cur, r)
+		}
+	}
+	if len(cur) > 0 {
+		tokens = append(tokens, string(cur))
+	}
+	return tokens
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/firecrawl/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/developer-tools/firecrawl/internal/store"
 )
+
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
 func looksLikeAuthError(msg string) bool {
 	lower := strings.ToLower(msg)
@@ -58,129 +60,129 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDescription("Cancel a batch scrape job Returns CancelScrapeResponse. Destructive."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the batch scrape job")),
 		),
-		makeAPIHandler("DELETE", "/batch/scrape/{id}", []string{"id", }),
+		makeAPIHandler("DELETE", "/batch/scrape/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("batch_get-scrape-errors",
 			mcplib.WithDescription("Get the errors of a batch scrape job Returns CrawlErrorsResponseObj."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the batch scrape job")),
 		),
-		makeAPIHandler("GET", "/batch/scrape/{id}/errors", []string{"id", }),
+		makeAPIHandler("GET", "/batch/scrape/{id}/errors", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("batch_get-scrape-status",
 			mcplib.WithDescription("Get the status of a batch scrape job Returns array of GetScrapeStatusItem."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the batch scrape job")),
 		),
-		makeAPIHandler("GET", "/batch/scrape/{id}", []string{"id", }),
+		makeAPIHandler("GET", "/batch/scrape/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("batch_scrape-and-extract-from-urls",
 			mcplib.WithDescription("Scrape multiple URLs and optionally extract information using an LLM Returns BatchScrapeResponseObj."),
 		),
-		makeAPIHandler("POST", "/batch/scrape", []string{ }),
+		makeAPIHandler("POST", "/batch/scrape", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("crawl_cancel",
 			mcplib.WithDescription("Cancel a crawl job Returns CancelResponse. Destructive."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the crawl job")),
 		),
-		makeAPIHandler("DELETE", "/crawl/{id}", []string{"id", }),
+		makeAPIHandler("DELETE", "/crawl/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("crawl_get-active",
 			mcplib.WithDescription("Get all active crawls for the authenticated team Returns GetActiveResponse."),
 		),
-		makeAPIHandler("GET", "/crawl/active", []string{ }),
+		makeAPIHandler("GET", "/crawl/active", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("crawl_get-status",
 			mcplib.WithDescription("Get the status of a crawl job Returns array of GetStatusItem."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the crawl job")),
 		),
-		makeAPIHandler("GET", "/crawl/{id}", []string{"id", }),
+		makeAPIHandler("GET", "/crawl/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("crawl_urls",
 			mcplib.WithDescription("Crawl multiple URLs based on options Returns CrawlResponse."),
 		),
-		makeAPIHandler("POST", "/crawl", []string{ }),
+		makeAPIHandler("POST", "/crawl", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("crawl_errors_get-crawl",
 			mcplib.WithDescription("Get the errors of a crawl job Returns CrawlErrorsResponseObj."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the crawl job")),
 		),
-		makeAPIHandler("GET", "/crawl/{id}/errors", []string{"id", }),
+		makeAPIHandler("GET", "/crawl/{id}/errors", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("deep-research_get-status",
 			mcplib.WithDescription("Get the status and results of a deep research operation Returns GetStatusResponse."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the research job")),
 		),
-		makeAPIHandler("GET", "/deep-research/{id}", []string{"id", }),
+		makeAPIHandler("GET", "/deep-research/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("deep-research_start",
 			mcplib.WithDescription("Start a deep research operation on a query Returns StartResponse."),
 		),
-		makeAPIHandler("POST", "/deep-research", []string{ }),
+		makeAPIHandler("POST", "/deep-research", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("extract_data",
 			mcplib.WithDescription("Extract structured data from pages using LLMs Returns ExtractResponse."),
 		),
-		makeAPIHandler("POST", "/extract", []string{ }),
+		makeAPIHandler("POST", "/extract", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("extract_get-status",
 			mcplib.WithDescription("Get the status of an extract job Returns ExtractStatusResponse."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the extract job")),
 		),
-		makeAPIHandler("GET", "/extract/{id}", []string{"id", }),
+		makeAPIHandler("GET", "/extract/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("llmstxt_generate-llms-txt",
 			mcplib.WithDescription("Generate LLMs.txt for a website Returns GenerateLlmsTxtResponse."),
 		),
-		makeAPIHandler("POST", "/llmstxt", []string{ }),
+		makeAPIHandler("POST", "/llmstxt", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("llmstxt_get-llms-txt-status",
 			mcplib.WithDescription("Get the status and results of an LLMs.txt generation job Returns GetLlmsTxtStatusResponse."),
 			mcplib.WithString("id", mcplib.Required(), mcplib.Description("The ID of the LLMs.txt generation job")),
 		),
-		makeAPIHandler("GET", "/llmstxt/{id}", []string{"id", }),
+		makeAPIHandler("GET", "/llmstxt/{id}", []string{"id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("map_urls",
 			mcplib.WithDescription("Map multiple URLs based on options Returns MapResponse."),
 		),
-		makeAPIHandler("POST", "/map", []string{ }),
+		makeAPIHandler("POST", "/map", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("scrape_and-extract-from-url",
 			mcplib.WithDescription("Scrape a single URL and optionally extract information using an LLM Returns ScrapeResponse."),
 		),
-		makeAPIHandler("POST", "/scrape", []string{ }),
+		makeAPIHandler("POST", "/scrape", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("search_and-scrape",
 			mcplib.WithDescription("Search and optionally scrape search results Returns array of AndScrapeItem."),
 		),
-		makeAPIHandler("POST", "/search", []string{ }),
+		makeAPIHandler("POST", "/search", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("team_get-credit-usage",
 			mcplib.WithDescription("Get remaining credits for the authenticated team Returns GetCreditUsageResponse."),
 		),
-		makeAPIHandler("GET", "/team/credit-usage", []string{ }),
+		makeAPIHandler("GET", "/team/credit-usage", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("team_get-token-usage",
 			mcplib.WithDescription("Get remaining tokens for the authenticated team (Extract only) Returns GetTokenUsageResponse."),
 		),
-		makeAPIHandler("GET", "/team/token-usage", []string{ }),
+		makeAPIHandler("GET", "/team/token-usage", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -340,6 +342,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "firecrawl-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -423,69 +426,70 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "firecrawl",
-		"description": "API for interacting with Firecrawl services to perform web scraping and crawling tasks.",
-		"archetype":   "generic",
-		"tool_count":  20,
+		"api":          "firecrawl",
+		"description":  "API for interacting with Firecrawl services to perform web scraping and crawling tasks.",
+		"archetype":    "generic",
+		"tool_count":   20,
+		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion firecrawl-pp-cli binary; the MCP cannot invoke them.",
 		"auth": map[string]any{
-			"type": "bearer_token",
-			"env_vars": []string{"FIRECRAWL_TOKEN",  },
+			"type":     "bearer_token",
+			"env_vars": []string{"FIRECRAWL_TOKEN"},
 		},
 		"resources": []map[string]any{
 			{
-				"name": "batch",
+				"name":        "batch",
 				"description": "Manage batch",
-				"endpoints": []string{"cancel-scrape", "get-scrape-errors", "get-scrape-status", "scrape-and-extract-from-urls",  },
-				"searchable": true,
+				"endpoints":   []string{"cancel-scrape", "get-scrape-errors", "get-scrape-status", "scrape-and-extract-from-urls"},
+				"searchable":  true,
 			},
 			{
-				"name": "crawl",
+				"name":        "crawl",
 				"description": "Manage crawl",
-				"endpoints": []string{"cancel", "get-active", "get-status", "urls",  },
-				"syncable": true,
-				"searchable": true,
+				"endpoints":   []string{"cancel", "get-active", "get-status", "urls"},
+				"syncable":    true,
+				"searchable":  true,
 			},
 			{
-				"name": "deep-research",
+				"name":        "deep-research",
 				"description": "Manage deep research",
-				"endpoints": []string{"get-status", "start",  },
-				"searchable": true,
+				"endpoints":   []string{"get-status", "start"},
+				"searchable":  true,
 			},
 			{
-				"name": "extract",
+				"name":        "extract",
 				"description": "Manage extract",
-				"endpoints": []string{"data", "get-status",  },
-				"searchable": true,
+				"endpoints":   []string{"data", "get-status"},
+				"searchable":  true,
 			},
 			{
-				"name": "llmstxt",
+				"name":        "llmstxt",
 				"description": "Manage llmstxt",
-				"endpoints": []string{"generate-llms-txt", "get-llms-txt-status",  },
-				"searchable": true,
+				"endpoints":   []string{"generate-llms-txt", "get-llms-txt-status"},
+				"searchable":  true,
 			},
 			{
-				"name": "map",
+				"name":        "map",
 				"description": "Manage map",
-				"endpoints": []string{"urls",  },
-				"searchable": true,
+				"endpoints":   []string{"urls"},
+				"searchable":  true,
 			},
 			{
-				"name": "scrape",
+				"name":        "scrape",
 				"description": "Manage scrape",
-				"endpoints": []string{"and-extract-from-url",  },
-				"searchable": true,
+				"endpoints":   []string{"and-extract-from-url"},
+				"searchable":  true,
 			},
 			{
-				"name": "search",
+				"name":        "search",
 				"description": "Manage search",
-				"endpoints": []string{"and-scrape",  },
-				"searchable": true,
+				"endpoints":   []string{"and-scrape"},
+				"searchable":  true,
 			},
 			{
-				"name": "team",
+				"name":        "team",
 				"description": "Manage team",
-				"endpoints": []string{"get-credit-usage", "get-token-usage",  },
-				"syncable": true,
+				"endpoints":   []string{"get-credit-usage", "get-token-usage"},
+				"syncable":    true,
 			},
 		},
 		"query_tips": []string{
@@ -498,4 +502,105 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 	}
 	data, _ := json.MarshalIndent(ctx, "", "  ")
 	return mcplib.NewToolResultText(string(data)), nil
+}
+
+// RegisterNovelFeatureTools registers MCP tools that shell out to the
+// companion CLI binary. Empty body when the spec has no novel features.
+func RegisterNovelFeatureTools(s *server.MCPServer) {
+	s.AddTool(
+		mcplib.NewTool("scrape",
+			mcplib.WithDescription("Scrape a URL into agent-friendly output with Firecrawl authentication and Printing Press JSON/compact controls."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("scrape"),
+	)
+	s.AddTool(
+		mcplib.NewTool("crawl_urls",
+			mcplib.WithDescription("Start a Firecrawl crawl job from a base URL with depth, limit, sitemap, and path controls."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("crawl urls"),
+	)
+	s.AddTool(
+		mcplib.NewTool("map",
+			mcplib.WithDescription("Map discoverable URLs for a site as a lightweight pre-crawl discovery workflow."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("map"),
+	)
+	s.AddTool(
+		mcplib.NewTool("batch_scrape_and_extract_from_urls",
+			mcplib.WithDescription("Submit multiple URLs for scrape/extract jobs with cache, PDF, content, tag, proxy, and batch controls."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("batch scrape-and-extract-from-urls"),
+	)
+	s.AddTool(
+		mcplib.NewTool("extract_data",
+			mcplib.WithDescription("Run Firecrawl extraction over URLs with prompt-driven structured data options."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("extract data"),
+	)
+}
+
+// siblingCLIPath resolves the companion CLI via sibling-of-executable,
+// FIRECRAWL_CLI_PATH env var, then PATH.
+func siblingCLIPath() (string, error) {
+	const cliName = "firecrawl-pp-cli"
+	if exe, err := os.Executable(); err == nil {
+		candidate := filepath.Join(filepath.Dir(exe), cliName)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	if v := os.Getenv("FIRECRAWL_CLI_PATH"); v != "" {
+		return v, nil
+	}
+	return exec.LookPath(cliName)
+}
+
+// shellOutToCLI returns an MCP tool handler that runs commandSpec against
+// the companion CLI. Resolves the binary path and pre-splits commandSpec
+// at registration so the per-call work is just user-arg split + exec.
+func shellOutToCLI(commandSpec string) server.ToolHandlerFunc {
+	cliPath, lookupErr := siblingCLIPath()
+	prefixArgs := splitShellArgs(commandSpec)
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		if lookupErr != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("companion CLI binary not found: %v\nTried sibling lookup, FIRECRAWL_CLI_PATH env var, and PATH.", lookupErr)), nil
+		}
+		userArgs, _ := req.GetArguments()["args"].(string)
+		finalArgs := append(append([]string{}, prefixArgs...), splitShellArgs(userArgs)...)
+		cmd := exec.CommandContext(ctx, cliPath, finalArgs...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return mcplib.NewToolResultError(string(out)), nil
+		}
+		return mcplib.NewToolResultText(string(out)), nil
+	}
+}
+
+// splitShellArgs whitespace-splits with double-quoted-token preservation.
+func splitShellArgs(s string) []string {
+	var tokens []string
+	var cur []rune
+	inQuote := false
+	for _, r := range s {
+		switch {
+		case r == '"':
+			inQuote = !inQuote
+		case (r == ' ' || r == '\t') && !inQuote:
+			if len(cur) > 0 {
+				tokens = append(tokens, string(cur))
+				cur = cur[:0]
+			}
+		default:
+			cur = append(cur, r)
+		}
+	}
+	if len(cur) > 0 {
+		tokens = append(tokens, string(cur))
+	}
+	return tokens
 }

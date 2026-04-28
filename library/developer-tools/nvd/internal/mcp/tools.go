@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,7 +27,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDescription("Search CPE names Returns CpeSearchResults."),
 			mcplib.WithString("cpeMatchString", mcplib.Description("Partial CPE match pattern")),
 		),
-		makeAPIHandler("GET", "/rest/json/cpes/2.0", []string{ }),
+		makeAPIHandler("GET", "/rest/json/cpes/2.0", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("json_search-cves",
@@ -39,7 +40,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("hasKev", mcplib.Description("Filter to CVEs in Known Exploited Vulnerabilities catalog")),
 			mcplib.WithString("isVulnerable", mcplib.Description("true: only CVEs with confirmed vulnerable CPEs")),
 		),
-		makeAPIHandler("GET", "/rest/json/cves/2.0", []string{ }),
+		makeAPIHandler("GET", "/rest/json/cves/2.0", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -183,6 +184,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "nvd-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -239,17 +241,18 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "nvd",
-		"description": "The NVD is the U.S. government repository of standards-based vulnerability management data. Search CVEs by keyword,...",
-		"archetype":   "generic",
-		"tool_count":  2,
+		"api":          "nvd",
+		"description":  "The NVD is the U.S. government repository of standards-based vulnerability management data. Search CVEs by keyword,...",
+		"archetype":    "generic",
+		"tool_count":   2,
+		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion nvd-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "json",
+				"name":        "json",
 				"description": "Manage json",
-				"endpoints": []string{"search-cpes", "search-cves",  },
-				"syncable": true,
-				"searchable": true,
+				"endpoints":   []string{"search-cpes", "search-cves"},
+				"syncable":    true,
+				"searchable":  true,
 			},
 		},
 		"query_tips": []string{
@@ -262,4 +265,91 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 	}
 	data, _ := json.MarshalIndent(ctx, "", "  ")
 	return mcplib.NewToolResultText(string(data)), nil
+}
+
+// RegisterNovelFeatureTools registers MCP tools that shell out to the
+// companion CLI binary. Empty body when the spec has no novel features.
+func RegisterNovelFeatureTools(s *server.MCPServer) {
+	s.AddTool(
+		mcplib.NewTool("json_search_cves",
+			mcplib.WithDescription("Search National Vulnerability Database CVEs from the JSON API with agent-safe output controls."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("json search-cves"),
+	)
+	s.AddTool(
+		mcplib.NewTool("json_search_cpes",
+			mcplib.WithDescription("Search CPE names for affected products and platforms before vulnerability lookups."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("json search-cpes"),
+	)
+	s.AddTool(
+		mcplib.NewTool("workflow_archive",
+			mcplib.WithDescription("Archive vulnerability data locally for repeatable security research and offline analysis."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("workflow archive"),
+	)
+}
+
+// siblingCLIPath resolves the companion CLI via sibling-of-executable,
+// NVD_CLI_PATH env var, then PATH.
+func siblingCLIPath() (string, error) {
+	const cliName = "nvd-pp-cli"
+	if exe, err := os.Executable(); err == nil {
+		candidate := filepath.Join(filepath.Dir(exe), cliName)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	if v := os.Getenv("NVD_CLI_PATH"); v != "" {
+		return v, nil
+	}
+	return exec.LookPath(cliName)
+}
+
+// shellOutToCLI returns an MCP tool handler that runs commandSpec against
+// the companion CLI. Resolves the binary path and pre-splits commandSpec
+// at registration so the per-call work is just user-arg split + exec.
+func shellOutToCLI(commandSpec string) server.ToolHandlerFunc {
+	cliPath, lookupErr := siblingCLIPath()
+	prefixArgs := splitShellArgs(commandSpec)
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		if lookupErr != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("companion CLI binary not found: %v\nTried sibling lookup, NVD_CLI_PATH env var, and PATH.", lookupErr)), nil
+		}
+		userArgs, _ := req.GetArguments()["args"].(string)
+		finalArgs := append(append([]string{}, prefixArgs...), splitShellArgs(userArgs)...)
+		cmd := exec.CommandContext(ctx, cliPath, finalArgs...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return mcplib.NewToolResultError(string(out)), nil
+		}
+		return mcplib.NewToolResultText(string(out)), nil
+	}
+}
+
+// splitShellArgs whitespace-splits with double-quoted-token preservation.
+func splitShellArgs(s string) []string {
+	var tokens []string
+	var cur []rune
+	inQuote := false
+	for _, r := range s {
+		switch {
+		case r == '"':
+			inQuote = !inQuote
+		case (r == ' ' || r == '\t') && !inQuote:
+			if len(cur) > 0 {
+				tokens = append(tokens, string(cur))
+				cur = cur[:0]
+			}
+		default:
+			cur = append(cur, r)
+		}
+	}
+	if len(cur) > 0 {
+		tokens = append(tokens, string(cur))
+	}
+	return tokens
 }

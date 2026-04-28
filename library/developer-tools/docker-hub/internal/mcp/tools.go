@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("namespace", mcplib.Required(), mcplib.Description("Namespace (use 'library' for official images)")),
 			mcplib.WithString("repository", mcplib.Required(), mcplib.Description("Repository name")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/", []string{"namespace","repository", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/", []string{"namespace", "repository"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("repositories_dockerfile_get",
@@ -35,7 +36,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("namespace", mcplib.Required(), mcplib.Description("Namespace")),
 			mcplib.WithString("repository", mcplib.Required(), mcplib.Description("Repository")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/dockerfile/", []string{"namespace","repository", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/dockerfile/", []string{"namespace", "repository"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("repositories_tags_get",
@@ -44,7 +45,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("repository", mcplib.Required(), mcplib.Description("Repository")),
 			mcplib.WithString("tag", mcplib.Required(), mcplib.Description("Tag name (e.g. 'latest', '1.25', 'alpine')")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/{tag}/", []string{"namespace","repository","tag", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/{tag}/", []string{"namespace", "repository", "tag"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("repositories_tags_list",
@@ -55,7 +56,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("page", mcplib.Description("Page")),
 			mcplib.WithString("ordering", mcplib.Description("Sort order")),
 		),
-		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/", []string{"namespace","repository", }),
+		makeAPIHandler("GET", "/v2/repositories/{namespace}/{repository}/tags/", []string{"namespace", "repository"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("search_repositories",
@@ -66,7 +67,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("is_official", mcplib.Description("Filter to official images only")),
 			mcplib.WithString("is_automated", mcplib.Description("Filter to automated builds only")),
 		),
-		makeAPIHandler("GET", "/v2/search/repositories/", []string{ }),
+		makeAPIHandler("GET", "/v2/search/repositories/", []string{}),
 	)
 	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
@@ -210,6 +211,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "docker-hub-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -266,23 +268,24 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
-		"api":         "docker-hub",
-		"description": "Docker Hub public API. Search container images, browse tags, check sizes, inspect Dockerfiles, and explore the...",
-		"archetype":   "generic",
-		"tool_count":  5,
+		"api":          "docker-hub",
+		"description":  "Docker Hub public API. Search container images, browse tags, check sizes, inspect Dockerfiles, and explore the...",
+		"archetype":    "generic",
+		"tool_count":   5,
+		"tool_surface": "MCP exposes the endpoints listed under `resources` (plus sync/search/sql/context utilities when present). Items under `cli_only_capabilities` require running the companion docker-hub-pp-cli binary; the MCP cannot invoke them.",
 		"resources": []map[string]any{
 			{
-				"name": "repositories",
+				"name":        "repositories",
 				"description": "Repository metadata and details",
-				"endpoints": []string{"get-repository",  },
-				"searchable": true,
+				"endpoints":   []string{"get-repository"},
+				"searchable":  true,
 			},
 			{
-				"name": "search",
+				"name":        "search",
 				"description": "Search across all Docker Hub repositories",
-				"endpoints": []string{"repositories",  },
-				"syncable": true,
-				"searchable": true,
+				"endpoints":   []string{"repositories"},
+				"syncable":    true,
+				"searchable":  true,
 			},
 		},
 		"query_tips": []string{
@@ -295,4 +298,91 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 	}
 	data, _ := json.MarshalIndent(ctx, "", "  ")
 	return mcplib.NewToolResultText(string(data)), nil
+}
+
+// RegisterNovelFeatureTools registers MCP tools that shell out to the
+// companion CLI binary. Empty body when the spec has no novel features.
+func RegisterNovelFeatureTools(s *server.MCPServer) {
+	s.AddTool(
+		mcplib.NewTool("search",
+			mcplib.WithDescription("Search Docker Hub repositories with agent-ready JSON, compact output, and live/local source controls."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("search"),
+	)
+	s.AddTool(
+		mcplib.NewTool("repositories",
+			mcplib.WithDescription("Inspect repository metadata and tags from one CLI surface for image selection and automation."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("repositories"),
+	)
+	s.AddTool(
+		mcplib.NewTool("workflow_archive",
+			mcplib.WithDescription("Sync Docker Hub resources into the local store so agents can search and analyze without repeated live calls."),
+			mcplib.WithString("args", mcplib.Description("Arguments to pass to the CLI command (e.g. \"--domain stripe.com --json\"). Empty string for no args.")),
+		),
+		shellOutToCLI("workflow archive"),
+	)
+}
+
+// siblingCLIPath resolves the companion CLI via sibling-of-executable,
+// DOCKER_HUB_CLI_PATH env var, then PATH.
+func siblingCLIPath() (string, error) {
+	const cliName = "docker-hub-pp-cli"
+	if exe, err := os.Executable(); err == nil {
+		candidate := filepath.Join(filepath.Dir(exe), cliName)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	if v := os.Getenv("DOCKER_HUB_CLI_PATH"); v != "" {
+		return v, nil
+	}
+	return exec.LookPath(cliName)
+}
+
+// shellOutToCLI returns an MCP tool handler that runs commandSpec against
+// the companion CLI. Resolves the binary path and pre-splits commandSpec
+// at registration so the per-call work is just user-arg split + exec.
+func shellOutToCLI(commandSpec string) server.ToolHandlerFunc {
+	cliPath, lookupErr := siblingCLIPath()
+	prefixArgs := splitShellArgs(commandSpec)
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		if lookupErr != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("companion CLI binary not found: %v\nTried sibling lookup, DOCKER_HUB_CLI_PATH env var, and PATH.", lookupErr)), nil
+		}
+		userArgs, _ := req.GetArguments()["args"].(string)
+		finalArgs := append(append([]string{}, prefixArgs...), splitShellArgs(userArgs)...)
+		cmd := exec.CommandContext(ctx, cliPath, finalArgs...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return mcplib.NewToolResultError(string(out)), nil
+		}
+		return mcplib.NewToolResultText(string(out)), nil
+	}
+}
+
+// splitShellArgs whitespace-splits with double-quoted-token preservation.
+func splitShellArgs(s string) []string {
+	var tokens []string
+	var cur []rune
+	inQuote := false
+	for _, r := range s {
+		switch {
+		case r == '"':
+			inQuote = !inQuote
+		case (r == ' ' || r == '\t') && !inQuote:
+			if len(cur) > 0 {
+				tokens = append(tokens, string(cur))
+				cur = cur[:0]
+			}
+		default:
+			cur = append(cur, r)
+		}
+	}
+	if len(cur) > 0 {
+		tokens = append(tokens, string(cur))
+	}
+	return tokens
 }
