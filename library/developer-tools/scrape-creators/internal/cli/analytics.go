@@ -38,7 +38,7 @@ Data must be synced first with the sync command.`,
 				dbPath = defaultDBPath("scrape-creators-pp-cli")
 			}
 
-			db, err := store.Open(dbPath)
+			db, err := store.OpenWithContext(cmd.Context(), dbPath)
 			if err != nil {
 				return fmt.Errorf("opening local database: %w\nRun 'scrape-creators-pp-cli sync' first.", err)
 			}

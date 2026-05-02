@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -20,9 +19,8 @@ func newExportCmd(flags *rootFlags) *cobra.Command {
 	var noCache bool
 
 	cmd := &cobra.Command{
-		Use:         "export <resource> [id]",
-		Short:       "Export data to JSONL or JSON for backup, migration, or analysis",
-		Annotations: map[string]string{"mcp:read-only": "true"},
+		Use:   "export <resource> [id]",
+		Short: "Export data to JSONL or JSON for backup, migration, or analysis",
 		Long: `Export paginated API data to a local file. Supports JSONL (one JSON object
 per line, streaming-friendly) and JSON (array). JSONL is recommended for
 large datasets as it has no memory pressure.`,
@@ -45,11 +43,7 @@ large datasets as it has no memory pressure.`,
 			}
 
 			resource := args[0]
-			spec, ok := resolveResourceSpec(resource)
-			if !ok {
-				return usageErr(fmt.Errorf("unknown export resource %q (supported: %s)", resource, strings.Join(knownResourceNames(), ", ")))
-			}
-			path := spec.Path
+			path := "/" + resource
 			if len(args) > 1 {
 				path += "/" + args[1]
 			}
