@@ -48,16 +48,18 @@
       "name": "allrecipes",
       "category": "food-and-dining",
       "api": "Allrecipes",
-      "description": "Allrecipes Pocket — every Allrecipes recipe in your terminal: cached as data, with pantry-aware search, Bayesian-smoothed ranking, multi-recipe grocery lists, and clean markdown export.",
+      "description": "Search and fetch Allrecipes recipes as structured data, scale ingredients, build grocery lists, rank by Bayesian-smoothed popularity, and clear Cloudflare with a Chrome session cookie.",
       "path": "library/food-and-dining/allrecipes",
       "mcp": {
         "binary": "allrecipes-pp-mcp",
         "transport": "stdio",
         "tool_count": 2,
-        "public_tool_count": 2,
-        "auth_type": "none",
-        "env_vars": [],
-        "mcp_ready": "full",
+        "public_tool_count": 1,
+        "auth_type": "cookie",
+        "env_vars": [
+          "ALLRECIPES_COOKIES"
+        ],
+        "mcp_ready": "partial",
         "spec_format": "internal"
       }
     },
@@ -432,15 +434,15 @@
     {
       "name": "movie-goat",
       "category": "media-and-entertainment",
-      "api": "TMDb + OMDb",
-      "description": "Multi-source movie ratings (TMDb + OMDb), streaming availability, and cross-taste recommendations",
+      "api": "Movie Goat",
+      "description": "The movie CLI that combines TMDb's discovery engine with OMDb's multi-source ratings — and ships a SQLite watchlist that flags what's streaming on your services right now.",
       "path": "library/media-and-entertainment/movie-goat",
       "mcp": {
         "binary": "movie-goat-pp-mcp",
         "transport": "stdio",
         "tool_count": 25,
         "public_tool_count": 0,
-        "auth_type": "bearer_token",
+        "auth_type": "api_key",
         "env_vars": [
           "TMDB_API_KEY"
         ],
@@ -677,6 +679,29 @@
         "auth_type": "api_key",
         "env_vars": [
           "STEAM_WEB_API_KEY"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
+      "name": "tiktok-shop",
+      "category": "commerce",
+      "api": "TikTok Shop",
+      "description": "Safe v1 TikTok Shop Seller API CLI/MCP for auth readiness, token exchange and refresh, read-only shops, orders, products, inventory search, fulfillment packages, and warehouses.",
+      "path": "library/commerce/tiktok-shop",
+      "mcp": {
+        "binary": "tiktok-shop-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 11,
+        "public_tool_count": 11,
+        "auth_type": "signed_tiktok_shop_open_api",
+        "env_vars": [
+          "TIKTOK_SHOP_APP_KEY",
+          "TIKTOK_SHOP_APP_SECRET",
+          "TIKTOK_SHOP_ACCESS_TOKEN",
+          "TIKTOK_SHOP_REFRESH_TOKEN",
+          "TIKTOK_SHOP_SHOP_CIPHER"
         ],
         "mcp_ready": "full",
         "spec_format": "openapi3"
