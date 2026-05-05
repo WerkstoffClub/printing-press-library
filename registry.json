@@ -382,14 +382,13 @@
       "description": "Trade prediction markets, persist tick data, and answer category-level P&L questions Kalshi.com cannot.",
       "path": "library/payments/kalshi",
       "mcp": {
-        "binary": "kalshi-pp-mcp",
+        "binary": "kalshi-trade-manual-pp-mcp",
         "transport": "stdio",
         "tool_count": 96,
         "public_tool_count": 0,
         "auth_type": "api_key",
         "env_vars": [
-          "KALSHI_API_KEY",
-          "KALSHI_PRIVATE_KEY_PATH"
+          "KALSHI_TRADE_MANUAL_KALSHI_ACCESS_KEY"
         ],
         "mcp_ready": "full",
         "spec_format": "openapi3"
