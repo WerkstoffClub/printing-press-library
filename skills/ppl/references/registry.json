@@ -205,17 +205,19 @@
     },
     {
       "name": "dominos",
-      "category": "commerce",
-      "api": "Dominos Pizza",
-      "description": "Order pizza, browse menus, optimize deals, and track delivery from the terminal - with a local SQLite store for reorder, analytics, and cross-store price comparison.",
-      "path": "library/commerce/dominos",
+      "category": "food-and-dining",
+      "api": "Domino's",
+      "description": "Order pizza, browse menus, optimize deals, and track delivery from your terminal — with a local SQLite store that powers reorder, price comparison, and deal stacking no other Domino's tool offers.",
+      "path": "library/food-and-dining/dominos",
       "mcp": {
         "binary": "dominos-pp-mcp",
         "transport": "stdio",
-        "tool_count": 19,
-        "public_tool_count": 0,
-        "auth_type": "api_key",
+        "tool_count": 20,
+        "public_tool_count": 11,
+        "auth_type": "bearer_token",
         "env_vars": [
+          "DOMINOS_USERNAME",
+          "DOMINOS_PASSWORD",
           "DOMINOS_TOKEN"
         ],
         "mcp_ready": "full",
