@@ -443,6 +443,29 @@
       }
     },
     {
+      "name": "google-ads",
+      "category": "marketing",
+      "api": "Google Ads",
+      "description": "Google Ads API for account discovery, GAQL reporting, campaigns, budgets, assets, conversions, audiences, planning, and billing operations.",
+      "path": "library/marketing/google-ads",
+      "mcp": {
+        "binary": "google-ads-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 162,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "GOOGLE_ADS_ACCESS_TOKEN",
+          "GOOGLE_ADS_DEVELOPER_TOKEN",
+          "GOOGLE_ADS_LOGIN_CUSTOMER_ID"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "google-photos",
       "category": "media-and-entertainment",
       "api": "Google Photos",
