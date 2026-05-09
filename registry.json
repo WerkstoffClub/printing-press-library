@@ -487,6 +487,27 @@
       }
     },
     {
+      "name": "fireflies",
+      "category": "productivity",
+      "api": "Fireflies Pp Cli",
+      "description": "Every Fireflies meeting feature, plus offline search, cross-meeting intelligence, and a local database no other tool...",
+      "path": "library/productivity/fireflies",
+      "mcp": {
+        "binary": "fireflies-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 18,
+        "public_tool_count": 0,
+        "auth_type": "api_key",
+        "env_vars": [
+          "FIREFLIES_PP_CLI_API_KEY"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "graphql"
+      }
+    },
+    {
       "name": "flight-goat",
       "category": "travel",
       "api": "Flight GOAT",
@@ -725,6 +746,27 @@
         ],
         "mcp_ready": "full",
         "spec_format": "internal"
+      }
+    },
+    {
+      "name": "notion",
+      "category": "productivity",
+      "api": "Notion",
+      "description": "Every Notion database queryable offline — cross-workspace SQL joins, stale detection, and relation graph traversal...",
+      "path": "library/productivity/notion",
+      "mcp": {
+        "binary": "notion-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 47,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "NOTION_BEARER_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
       }
     },
     {
