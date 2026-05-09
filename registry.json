@@ -326,6 +326,26 @@
       }
     },
     {
+      "name": "digg",
+      "category": "media-and-entertainment",
+      "api": "Digg AI",
+      "description": "Tail the Digg AI 1000's news cycle from the terminal — read-only, with the full pipeline event stream and...",
+      "path": "library/media-and-entertainment/digg",
+      "printer_name": "Matt Van Horn",
+      "mcp": {
+        "binary": "digg-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 3,
+        "public_tool_count": 3,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "docker-hub",
       "category": "developer-tools",
       "api": "Docker Hub",
