@@ -492,6 +492,8 @@
       "api": "Fireflies Pp Cli",
       "description": "Every Fireflies meeting feature, plus offline search, cross-meeting intelligence, and a local database no other tool...",
       "path": "library/productivity/fireflies",
+      "printer": "neektza",
+      "printer_name": "Nikica Jokic",
       "mcp": {
         "binary": "fireflies-pp-mcp",
         "transports": [
@@ -754,6 +756,8 @@
       "api": "Notion",
       "description": "Every Notion database queryable offline — cross-workspace SQL joins, stale detection, and relation graph traversal...",
       "path": "library/productivity/notion",
+      "printer": "neektza",
+      "printer_name": "Nikica Jokic",
       "mcp": {
         "binary": "notion-pp-mcp",
         "transports": [
