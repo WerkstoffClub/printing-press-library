@@ -347,6 +347,29 @@
       }
     },
     {
+      "name": "digitalocean",
+      "category": "cloud",
+      "api": "DigitalOcean",
+      "description": "Printing Press CLI for Digitalocean.",
+      "path": "library/cloud/digitalocean",
+      "printer": "hnshah",
+      "printer_name": "Hiten Shah",
+      "mcp": {
+        "binary": "digitalocean-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 628,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "DIGITALOCEAN_BEARER_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "docker-hub",
       "category": "developer-tools",
       "api": "Docker Hub",
