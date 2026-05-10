@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"techmeme-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/productivity/techmeme/internal/store"
 )
 
 type riverHeadline struct {
@@ -24,11 +26,11 @@ type riverHeadline struct {
 }
 
 var (
-	dateHeaderRE = regexp.MustCompile(`<H2>([^<]+)</H2>`)
-	ritemRE      = regexp.MustCompile(`<tr class="ritem"><td>([^<]*?)&nbsp;`)
-	citeRE       = regexp.MustCompile(`<cite>([^<]*?)(?:<A[^>]*>([^<]*)</A>)?[^<]*</cite>`)
+	dateHeaderRE   = regexp.MustCompile(`<H2>([^<]+)</H2>`)
+	ritemRE        = regexp.MustCompile(`<tr class="ritem"><td>([^<]*?)&nbsp;`)
+	citeRE         = regexp.MustCompile(`<cite>([^<]*?)(?:<A[^>]*>([^<]*)</A>)?[^<]*</cite>`)
 	headlineLinkRE = regexp.MustCompile(`</cite>&nbsp;\s*<a href="([^"]+)"[^>]*>([^<]+)</a>`)
-	pmlRE        = regexp.MustCompile(`pml="([^"]+)"`)
+	pmlRE          = regexp.MustCompile(`pml="([^"]+)"`)
 )
 
 func fetchRiverHTML() ([]byte, error) {
@@ -100,7 +102,8 @@ func syncRiverData(db *store.Store, data []byte) (int, error) {
 		}
 
 		if h.ID == "" {
-			h.ID = fmt.Sprintf("h-%d", len(headlines))
+			sum := sha256.Sum256([]byte(h.Link))
+			h.ID = "h-" + hex.EncodeToString(sum[:8])
 		}
 
 		headlines = append(headlines, h)

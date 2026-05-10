@@ -23,6 +23,11 @@ import (
 
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
+// safeIdentifierPattern matches SQL identifiers safe for direct interpolation
+// (table names, JSON path keys). Used to defend against injection on the
+// callers that cannot use parameter binding for the identifier slot.
+var safeIdentifierPattern = regexp.MustCompile(`^\w+$`)
+
 // IsUUID returns true if the input looks like a UUID.
 func IsUUID(s string) bool {
 	return uuidPattern.MatchString(s)
@@ -783,9 +788,17 @@ func (s *Store) GetSyncCursor(resourceType string) string {
 // ListIDs returns all IDs from a resource's domain table, or from the generic
 // resources table if no domain table exists. Used by dependent sync to iterate parents.
 func (s *Store) ListIDs(resourceType string) ([]string, error) {
-	// Try domain table first (tables are named after the resource type)
-	query := fmt.Sprintf("SELECT id FROM %s", resourceType)
-	rows, err := s.db.Query(query)
+	// Domain tables are named after the resource type. Reject anything
+	// that isn't a plain identifier so a caller cannot smuggle SQL through
+	// the table-name slot, which fmt.Sprintf cannot parameterize.
+	var rows *sql.Rows
+	var err error
+	if safeIdentifierPattern.MatchString(resourceType) {
+		query := fmt.Sprintf("SELECT id FROM %s", resourceType)
+		rows, err = s.db.Query(query)
+	} else {
+		err = fmt.Errorf("invalid resource type")
+	}
 	if err != nil {
 		// Fall back to generic resources table
 		rows, err = s.db.Query("SELECT id FROM resources WHERE resource_type = ?", resourceType)
@@ -870,6 +883,12 @@ func (s *Store) ResolveByName(resourceType string, input string, matchFields ...
 
 	var matches []string
 	for _, field := range matchFields {
+		// json_extract path keys cannot be parameterized; reject anything
+		// that isn't a plain identifier rather than trust callers to pass
+		// only safe values.
+		if !safeIdentifierPattern.MatchString(field) {
+			continue
+		}
 		query := fmt.Sprintf(
 			`SELECT id FROM resources WHERE resource_type = ? AND LOWER(json_extract(data, '$.%s')) = LOWER(?)`,
 			field,
@@ -986,18 +1005,34 @@ func (s *Store) UpdateTopicLastChecked(topic string) error {
 }
 
 // SearchHeadlines searches cached headlines for a query string since a given time.
+// Uses the FTS5 index for keyword matching and filters by resource_type and
+// timestamp at query time.
 func (s *Store) SearchHeadlines(query string, since time.Time) ([]json.RawMessage, error) {
-	q := "%" + strings.ToLower(query) + "%"
 	rows, err := s.db.Query(
-		`SELECT data FROM resources
-		 WHERE resource_type = 'headline'
-		 AND LOWER(data) LIKE ?
-		 AND json_extract(data, '$.timestamp') >= ?
-		 ORDER BY json_extract(data, '$.timestamp') DESC`,
-		q, since.Format(time.RFC3339),
+		`SELECT r.data FROM resources r
+		 JOIN resources_fts f ON r.id = f.id
+		 WHERE r.resource_type = 'headline'
+		 AND resources_fts MATCH ?
+		 AND json_extract(r.data, '$.timestamp') >= ?
+		 ORDER BY json_extract(r.data, '$.timestamp') DESC`,
+		query, since.Format(time.RFC3339),
 	)
 	if err != nil {
-		return nil, err
+		// FTS MATCH errors on punctuation-only queries; fall back to LIKE
+		// against the indexed timestamp column so the user still gets a
+		// result rather than a 500-style failure.
+		q := "%" + strings.ToLower(query) + "%"
+		rows, err = s.db.Query(
+			`SELECT data FROM resources
+			 WHERE resource_type = 'headline'
+			 AND LOWER(data) LIKE ?
+			 AND json_extract(data, '$.timestamp') >= ?
+			 ORDER BY json_extract(data, '$.timestamp') DESC`,
+			q, since.Format(time.RFC3339),
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer rows.Close()
 
@@ -1063,23 +1098,28 @@ func (s *Store) HeadlinesForDate(date string) ([]json.RawMessage, error) {
 }
 
 // SearchByAuthor returns cached headlines where the author field matches (case-insensitive).
+// Uses FTS5 to narrow before exact-matching the JSON field, since FTS5 cannot
+// scope the match to a JSON field on its own.
 func (s *Store) SearchByAuthor(name string) ([]json.RawMessage, error) {
 	q := "%" + strings.ToLower(name) + "%"
 	rows, err := s.db.Query(
-		`SELECT data FROM resources
-		 WHERE resource_type = 'headline'
-		 AND LOWER(json_extract(data, '$.author')) LIKE ?
-		 ORDER BY updated_at DESC`,
-		q,
+		`SELECT r.data FROM resources r
+		 JOIN resources_fts f ON r.id = f.id
+		 WHERE r.resource_type = 'headline'
+		 AND resources_fts MATCH ?
+		 AND LOWER(json_extract(r.data, '$.author')) LIKE ?
+		 ORDER BY r.updated_at DESC`,
+		name, q,
 	)
 	if err != nil {
-		// Fallback: search in raw data for author field
+		// FTS MATCH may reject punctuation-heavy author names; fall back
+		// to the JSON-extract LIKE path the prior implementation used.
 		rows, err = s.db.Query(
 			`SELECT data FROM resources
 			 WHERE resource_type = 'headline'
-			 AND LOWER(data) LIKE ?
+			 AND LOWER(json_extract(data, '$.author')) LIKE ?
 			 ORDER BY updated_at DESC`,
-			"%\"author\":%"+q+"%",
+			q,
 		)
 		if err != nil {
 			return nil, err

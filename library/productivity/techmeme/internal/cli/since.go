@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/productivity/techmeme/internal/store"
+	"github.com/spf13/cobra"
 )
 
-// parseDurationString parses human-friendly duration strings like "4h", "12h", "1d", "30m".
+// parseDurationString parses human-friendly duration strings like "4h", "12h", "1d", "1w", "30m".
 func parseDurationString(s string) (time.Duration, error) {
-	re := regexp.MustCompile(`^(\d+)([dhm])$`)
+	re := regexp.MustCompile(`^(\d+)([dhwm])$`)
 	matches := re.FindStringSubmatch(strings.TrimSpace(s))
 	if matches == nil {
-		return 0, fmt.Errorf("expected format like 4h, 12h, 1d, or 30m")
+		return 0, fmt.Errorf("expected format like 4h, 12h, 1d, 1w, or 30m")
 	}
 
 	n, err := strconv.Atoi(matches[1])
@@ -30,6 +30,8 @@ func parseDurationString(s string) (time.Duration, error) {
 	switch matches[2] {
 	case "d":
 		return time.Duration(n) * 24 * time.Hour, nil
+	case "w":
+		return time.Duration(n) * 7 * 24 * time.Hour, nil
 	case "h":
 		return time.Duration(n) * time.Hour, nil
 	case "m":
