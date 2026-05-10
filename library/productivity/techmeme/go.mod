@@ -1,4 +1,4 @@
-module techmeme-pp-cli
+module github.com/mvanhorn/printing-press-library/library/productivity/techmeme
 
 go 1.25.0
 

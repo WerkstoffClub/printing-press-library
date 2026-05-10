@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/productivity/techmeme/internal/store"
+	"github.com/spf13/cobra"
 )
 
 // stopwords is a set of common English words to filter from trending analysis.

@@ -6,6 +6,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mvanhorn/printing-press-library/library/productivity/techmeme/internal/store"
 	"github.com/spf13/cobra"
 	"net/url"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"techmeme-pp-cli/internal/store"
 	"time"
 )
 
