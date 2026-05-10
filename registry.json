@@ -1328,6 +1328,27 @@
       }
     },
     {
+      "name": "table-reservation-goat",
+      "category": "food-and-dining",
+      "api": "Table Reservation GOAT",
+      "description": "One reservation CLI for OpenTable and Tock — search both networks at once, watch for cancellations, book, and...",
+      "path": "library/food-and-dining/table-reservation-goat",
+      "printer": "pejmanjohn",
+      "printer_name": "Pejman Pour-Moezzi",
+      "mcp": {
+        "binary": "table-reservation-goat-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 12,
+        "public_tool_count": 12,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "tiktok-shop",
       "category": "commerce",
       "api": "TikTok Shop",
