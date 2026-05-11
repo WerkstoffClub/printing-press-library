@@ -167,18 +167,51 @@ func lookupIn(places []Place, slug string) (Place, bool) {
 	return Place{}, false
 }
 
-// lookupByNameIn returns every Place whose display Name matches the
-// query case-insensitively. Order preserved from the input slice for
-// determinism. Empty input or zero hits returns (nil, false).
+// PATCH: lookupbyname-alias-aware — `LookupByName` originally did strict
+// exact-equal on display Name only; short forms already curated as
+// `Aliases` ("nyc", "sf", "la", "dc", "weho", "bk") never resolved
+// through the by-name path. U22 layered an alias-check on top of the
+// exact-Name match so the by-name path honors the same curated alias
+// surface `Lookup(slug)` does. Hyphen↔space normalization on both
+// sides lets slug-style aliases ("new-york") interchange with natural-
+// language input ("new york"). The dedup-by-slug guard is defensive —
+// curated data avoids redundant Name+alias double-matches but a future
+// entry that carries both still returns once. See
+// .printing-press-patches.json entry `lookupbyname-alias-aware`.
+//
+// lookupByNameIn returns every Place that matches the query by display
+// Name OR by curated alias, case-insensitive after trim. Order
+// preserved from the input slice for determinism. Empty input or zero
+// hits returns (nil, false).
 func lookupByNameIn(places []Place, name string) ([]Place, bool) {
 	key := strings.ToLower(strings.TrimSpace(name))
 	if key == "" {
 		return nil, false
 	}
+	keyNormalized := strings.ReplaceAll(key, "-", " ")
+
 	var hits []Place
+	seenSlug := make(map[string]bool)
 	for _, p := range places {
+		if seenSlug[p.Slug] {
+			continue
+		}
+		// Strategy 1: exact display-Name match.
 		if strings.ToLower(p.Name) == key {
 			hits = append(hits, p)
+			seenSlug[p.Slug] = true
+			continue
+		}
+		// Strategy 2: curated-alias match, with hyphen↔space
+		// normalization on both sides so slug-style and
+		// natural-language forms interchange.
+		for _, a := range p.Aliases {
+			aKey := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(a)), "-", " ")
+			if aKey == keyNormalized {
+				hits = append(hits, p)
+				seenSlug[p.Slug] = true
+				break
+			}
 		}
 	}
 	if len(hits) == 0 {

@@ -47,10 +47,14 @@ var curatedPlaces = []Place{
 		Lng:        -74.0060,
 		RadiusKm:   75,
 		Population: 8804190,
-		// U17: removed "manhattan" alias — it now resolves to the
-		// dedicated borough entry below (tighter 10 km radius beats the
-		// metro's 75 km via ReverseLookup's smallest-radius tiebreak).
-		Aliases:      []string{"nyc", "new-york"},
+		// PATCH: lookupbyname-alias-aware — "new york" added so the
+		// alias-aware lookupByNameIn resolves the natural-language
+		// truncation users type when referring to NYC. "ny" intentionally
+		// omitted — it would collide with the LocCityState state-code.
+		// (Prior: U17 removed "manhattan" alias when the dedicated borough
+		// entry was carved out below; tighter 10 km radius beats the
+		// metro's 75 km via ReverseLookup's smallest-radius tiebreak.)
+		Aliases:      []string{"nyc", "new-york", "new york"},
 		ContextHints: []string{"NYC metro", "Tri-state"},
 		Tier:         PlaceTierMetroCentroid,
 	},
@@ -385,12 +389,15 @@ var curatedPlaces = []Place{
 		Lng:        -77.0369,
 		RadiusKm:   12,
 		Population: 712000,
-		// The "washington-dc" alias from the task spec is omitted: it
-		// would be shadowed by the existing washington-dc metro slug
-		// (which appears earlier in the list and matches first in
-		// lookupIn's iteration). Keeping it would invite the wrong
-		// mental model.
-		Aliases: []string{"dc", "the-district"},
+		// PATCH: lookupbyname-alias-aware — "washington" added so the
+		// alias-aware lookupByNameIn resolves the natural-language
+		// truncation through the city entry (the tighter 12 km radius,
+		// ContextHints set). The "washington-dc" alias is intentionally
+		// omitted: it would be shadowed by the existing washington-dc
+		// metro slug (which appears earlier in the list and matches
+		// first in lookupIn's iteration). Keeping it would invite the
+		// wrong mental model.
+		Aliases: []string{"dc", "the-district", "washington"},
 		ParentMetro: map[string]string{
 			"opentable": "washington-dc",
 		},
