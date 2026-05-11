@@ -171,7 +171,10 @@ from either an active plan (--reuse-last) or a localStorage-shape JSON file
 				return classifyAPIError(err, flags)
 			}
 
-			result := parsePostOrderResponse(data, slug)
+			result, err := parsePostOrderResponse(data, slug)
+			if err != nil {
+				return &cliError{code: 5, err: fmt.Errorf("checkout POST returned 200 but response did not contain a valid order: %w. Raw body: %s", err, truncate(string(data), 500))}
+			}
 			if result.Total > 0 && result.Total > maxBudget && !confirmOverBudget {
 				// We charged successfully but exceeded budget; surface clearly.
 				result.Warning = fmt.Sprintf("actual total %.2f exceeded --max %.2f", result.Total, maxBudget)
@@ -248,35 +251,14 @@ func loadCart(cartFile string, reuseLast bool, slug string, restID int) ([]cartI
 	}
 
 	if reuseLast {
-		cart, err := loadActiveCart()
-		if err != nil {
-			return nil, 0, "", 0, notFoundErr(fmt.Errorf("reading active cart: %w", err))
-		}
-		items := make([]cartItem, 0, len(cart.Items))
-		for _, it := range cart.Items {
-			id, _ := stringToInt(it.ID)
-			items = append(items, cartItem{
-				ItemID:                 id,
-				OptionsStr:             nil,
-				OptionsStr2nd:          "",
-				OptionItemIDs:          []any{},
-				OptionItemIDsAndPrices: []any{},
-				Price:                  it.Price,
-				Togo:                   "1",
-			})
-		}
-		rid := restID
-		if rid == 0 {
-			rid, _ = stringToInt(cart.RestID)
-		}
-		s := slug
-		if s == "" {
-			s = cart.Restaurant
-		}
-		return items, cart.Totals.Subtotal, s, rid, nil
+		// The active-cart store schema (store.OrderItem) does not carry
+		// option strings or option-item IDs, so reusing it would silently
+		// drop every customization (sauce choices, "no ginger", etc.)
+		// from the POST body. Refuse rather than send a wrong order.
+		return nil, 0, "", 0, usageErr(fmt.Errorf("--reuse-last is not supported by this checkout flow because the active-cart store does not preserve item option strings. Use --cart-file with a localStorage-shape JSON cart (which preserves optionsstr) instead"))
 	}
 
-	return nil, 0, "", 0, usageErr(fmt.Errorf("provide --cart-file or --reuse-last"))
+	return nil, 0, "", 0, usageErr(fmt.Errorf("provide --cart-file"))
 }
 
 func ifNil(s []any) []any {
@@ -293,10 +275,11 @@ func stringToInt(s string) (int, error) {
 }
 
 func buildPostOrderBody(cfg *config.Config, items []cartItem, subtotal, tip float64, slug string, restID int) postOrderBody {
+	fullName := strings.TrimSpace(cfg.CustomerFirstName + " " + cfg.CustomerLastName)
 	return postOrderBody{
 		Param: postOrderParam{
 			CustomerPhone: cfg.CustomerPhone,
-			CustomerName:  cfg.CustomerFirstName,
+			CustomerName:  fullName,
 			AdditionalIns: "",
 			RestName:      slug,
 			OrderDetails: orderDetails{
@@ -332,7 +315,7 @@ type postOrderResult struct {
 	Warning       string    `json:"warning,omitempty"`
 }
 
-func parsePostOrderResponse(data []byte, slug string) postOrderResult {
+func parsePostOrderResponse(data []byte, slug string) (postOrderResult, error) {
 	r := postOrderResult{OrderedAt: time.Now(), Restaurant: slug}
 	var wrapper struct {
 		Transaction struct {
@@ -346,16 +329,21 @@ func parsePostOrderResponse(data []byte, slug string) postOrderResult {
 			CardID        string  `json:"cardId"`
 		} `json:"transaction"`
 	}
-	if err := json.Unmarshal(data, &wrapper); err == nil {
-		t := wrapper.Transaction
-		r.OrderID = t.OrderID
-		r.TransactionID = t.TransactionID
-		r.Total = roundMoney(t.Amount)
-		r.Tax = roundMoney(t.Tax)
-		r.Tip = roundMoney(t.Tip)
-		r.Status = t.Status
-		r.CardType = t.CardType
-		r.CardID = t.CardID
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return r, fmt.Errorf("response is not valid JSON: %w", err)
 	}
-	return r
+	t := wrapper.Transaction
+	if t.OrderID == 0 {
+		return r, fmt.Errorf("response missing transaction.orderid (got transaction=%+v)", t)
+	}
+	r.OrderID = t.OrderID
+	r.TransactionID = t.TransactionID
+	r.Total = roundMoney(t.Amount)
+	r.Tax = roundMoney(t.Tax)
+	r.Tip = roundMoney(t.Tip)
+	r.Status = t.Status
+	r.CardType = t.CardType
+	r.CardID = t.CardID
+	return r, nil
 }
+

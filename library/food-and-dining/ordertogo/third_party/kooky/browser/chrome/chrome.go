@@ -138,12 +138,22 @@ func (d *cookieDecrypter) decrypt(encrypted []byte, hostKey string) (string, err
 	iv := bytes.Repeat([]byte{' '}, block.BlockSize())
 	plaintext := make([]byte, len(ciphertext))
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(plaintext, ciphertext)
-	// Strip PKCS#7 padding.
+	// Strip PKCS#7 padding. Validate every padding byte equals the pad
+	// length — a wrong key or corrupted ciphertext often produces a
+	// last byte that happens to land in [1, blockSize] but with garbage
+	// in the rest of the trailing block, which would silently truncate
+	// real cookie data.
 	if n := len(plaintext); n > 0 {
 		pad := int(plaintext[n-1])
-		if pad >= 1 && pad <= block.BlockSize() {
-			plaintext = plaintext[:n-pad]
+		if pad < 1 || pad > block.BlockSize() || pad > n {
+			return "", fmt.Errorf("invalid PKCS#7 pad length %d (likely wrong key)", pad)
 		}
+		for i := n - pad; i < n; i++ {
+			if int(plaintext[i]) != pad {
+				return "", fmt.Errorf("invalid PKCS#7 padding byte at %d (likely wrong key)", i)
+			}
+		}
+		plaintext = plaintext[:n-pad]
 	}
 	// Chrome M120+ prepends SHA-256(host_key) to v10 plaintext for host binding.
 	// Older v10 cookies omit this prefix, so check before stripping.
