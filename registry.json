@@ -1085,6 +1085,29 @@
       }
     },
     {
+      "name": "outlook-calendar",
+      "category": "productivity",
+      "api": "Outlook Calendar",
+      "description": "The first Outlook calendar CLI built for AI agents on personal Microsoft 365 accounts — with offline conflict...",
+      "path": "library/productivity/outlook-calendar",
+      "printer": "brennaman",
+      "printer_name": "Paul Brennaman",
+      "mcp": {
+        "binary": "outlook-calendar-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 31,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "OUTLOOK_CALENDAR_TOKEN"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "pagliacci",
       "category": "food-and-dining",
       "api": "Pagliacci Pizza",
