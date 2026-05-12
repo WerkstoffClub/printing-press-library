@@ -86,15 +86,6 @@ func ExtractAuth0Cookies() (map[string]string, error) {
 	return out, nil
 }
 
-// CookieHeader formats the cookies as a Cookie request header value.
-func CookieHeader(cookies map[string]string) string {
-	parts := make([]string, 0, len(cookies))
-	for name, value := range cookies {
-		parts = append(parts, name+"="+value)
-	}
-	return strings.Join(parts, "; ")
-}
-
 type cookieRow struct {
 	name      string
 	encrypted []byte
