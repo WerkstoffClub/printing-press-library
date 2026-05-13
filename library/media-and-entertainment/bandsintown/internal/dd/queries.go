@@ -161,12 +161,7 @@ func Route(ctx context.Context, db *sql.DB, toLat, toLng float64, target time.Ti
 	return out, nil
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+// min is a Go 1.21+ built-in; no local definition needed.
 
 // Gap is an empty interval between two consecutive events of a single artist.
 type Gap struct {

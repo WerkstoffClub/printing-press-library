@@ -183,12 +183,20 @@ func ReplaceEvents(ctx context.Context, db *sql.DB, artistName string, events []
 	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM dd_events WHERE artist_name=?`, artistName).Scan(&existing); err != nil {
 		return 0, 0, err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM dd_events WHERE artist_name=?`, artistName); err != nil {
+	// Delete child rows (lineup members, offers) BEFORE deleting their parent
+	// events — the subqueries need the parent table populated to resolve the
+	// IN-clause. Swapping the order means a lineup change between pulls (e.g.,
+	// Artist B dropped from Event X) actually removes the stale B→X row instead
+	// of letting INSERT OR IGNORE silently preserve it, which would inflate
+	// LineupCoBill counts forever. Same correctness issue applied to dd_offers:
+	// without the explicit delete here, cancelled offers stayed in the table.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM dd_lineup_members WHERE event_id IN (SELECT id FROM dd_events WHERE artist_name=?)`, artistName); err != nil {
 		return 0, 0, err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM dd_lineup_members WHERE event_id IN (SELECT id FROM dd_events WHERE artist_name=?)`, artistName); err != nil {
-		// Note: subquery would be empty after the DELETE above; this is a defensive
-		// orphan-cleanup that runs cheaply against the now-vacated index.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM dd_offers WHERE event_id IN (SELECT id FROM dd_events WHERE artist_name=?)`, artistName); err != nil {
+		return 0, 0, err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM dd_events WHERE artist_name=?`, artistName); err != nil {
 		return 0, 0, err
 	}
 

@@ -95,7 +95,10 @@ func Open(ctx context.Context, dbPath string) (*sql.DB, error) {
 		}
 	}
 	// modernc.org/sqlite is the driver the framework uses; piggyback on it.
-	db, err := sql.Open("sqlite", dbPath)
+	// Match the framework store's pragmas so dd writes share the same WAL mode
+	// and 5-second busy-retry budget — without these, dd writes hit SQLITE_BUSY
+	// immediately on lock contention while the framework store retries.
+	db, err := sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000&_foreign_keys=ON&_temp_store=MEMORY&_mmap_size=268435456")
 	if err != nil {
 		return nil, fmt.Errorf("open %s: %w", dbPath, err)
 	}
