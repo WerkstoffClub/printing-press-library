@@ -168,6 +168,29 @@
       }
     },
     {
+      "name": "beehiiv",
+      "category": "marketing",
+      "api": "Beehiiv",
+      "description": "Printing Press CLI for Beehiiv.",
+      "path": "library/marketing/beehiiv",
+      "printer": "kjmagnan1s",
+      "printer_name": "Kevin Magnan",
+      "mcp": {
+        "binary": "beehiiv-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 82,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "BEEHIIV_BEARER_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "cal-com",
       "category": "productivity",
       "api": "Cal.com",
