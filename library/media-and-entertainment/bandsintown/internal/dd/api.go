@@ -178,11 +178,28 @@ func ReplaceEvents(ctx context.Context, db *sql.DB, artistName string, events []
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Count current events for this artist (the "removed" baseline).
-	var existing int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM dd_events WHERE artist_name=?`, artistName).Scan(&existing); err != nil {
+	// Capture the current event-ID set for this artist so we can compute a true
+	// set-difference diff (added = in new, not in old; removed = in old, not in
+	// new). Net count alone misses the rescheduled-tour case: 5 events replaced
+	// by 5 different events reports 0/0 even though the entire lineup changed.
+	oldIDs := map[string]struct{}{}
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM dd_events WHERE artist_name=?`, artistName)
+	if err != nil {
 		return 0, 0, err
 	}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, 0, err
+		}
+		oldIDs[id] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, 0, err
+	}
+	rows.Close()
 	// Delete child rows (lineup members, offers) BEFORE deleting their parent
 	// events — the subqueries need the parent table populated to resolve the
 	// IN-clause. Swapping the order means a lineup change between pulls (e.g.,
@@ -241,10 +258,22 @@ func ReplaceEvents(ctx context.Context, db *sql.DB, artistName string, events []
 		return 0, 0, err
 	}
 
-	added = len(events) - existing
-	if added < 0 {
-		removed = -added
-		added = 0
+	// True set-difference diff (not net count delta). New event IDs that didn't
+	// exist before are "added"; old IDs that didn't appear in the new list are
+	// "removed". A 5-for-5 reschedule now reports 5/5, not 0/0.
+	newIDs := make(map[string]struct{}, len(events))
+	for _, e := range events {
+		newIDs[e.ID] = struct{}{}
+	}
+	for id := range newIDs {
+		if _, ok := oldIDs[id]; !ok {
+			added++
+		}
+	}
+	for id := range oldIDs {
+		if _, ok := newIDs[id]; !ok {
+			removed++
+		}
 	}
 	return added, removed, nil
 }

@@ -282,3 +282,61 @@ func TestCountTracked(t *testing.T) {
 		t.Errorf("expected 2, got %d", n)
 	}
 }
+
+func TestReplaceEventsDiff(t *testing.T) {
+	db := openTest(t)
+	ctx := context.Background()
+
+	// First pull: 3 events.
+	a := "Phoenix"
+	v1 := []Event{
+		{ID: "e1", ArtistName: a, Datetime: "2026-08-12T20:00:00"},
+		{ID: "e2", ArtistName: a, Datetime: "2026-08-22T20:00:00"},
+		{ID: "e3", ArtistName: a, Datetime: "2026-09-01T20:00:00"},
+	}
+	added, removed, err := ReplaceEvents(ctx, db, a, v1)
+	if err != nil {
+		t.Fatalf("first pull: %v", err)
+	}
+	if added != 3 || removed != 0 {
+		t.Errorf("first pull expected added=3 removed=0, got %d/%d", added, removed)
+	}
+
+	// Reschedule: same count, completely different IDs. Net-delta logic would
+	// report 0/0; set-difference logic must report 3/3.
+	v2 := []Event{
+		{ID: "e4", ArtistName: a, Datetime: "2026-08-13T20:00:00"},
+		{ID: "e5", ArtistName: a, Datetime: "2026-08-23T20:00:00"},
+		{ID: "e6", ArtistName: a, Datetime: "2026-09-02T20:00:00"},
+	}
+	added, removed, err = ReplaceEvents(ctx, db, a, v2)
+	if err != nil {
+		t.Fatalf("reschedule: %v", err)
+	}
+	if added != 3 || removed != 3 {
+		t.Errorf("reschedule (3-for-3 swap) expected added=3 removed=3, got %d/%d", added, removed)
+	}
+
+	// Partial overlap: keep e4 and e5, drop e6, add e7. Expect added=1 removed=1.
+	v3 := []Event{
+		{ID: "e4", ArtistName: a, Datetime: "2026-08-13T20:00:00"},
+		{ID: "e5", ArtistName: a, Datetime: "2026-08-23T20:00:00"},
+		{ID: "e7", ArtistName: a, Datetime: "2026-09-09T20:00:00"},
+	}
+	added, removed, err = ReplaceEvents(ctx, db, a, v3)
+	if err != nil {
+		t.Fatalf("partial overlap: %v", err)
+	}
+	if added != 1 || removed != 1 {
+		t.Errorf("partial-overlap expected added=1 removed=1, got %d/%d", added, removed)
+	}
+
+	// No-op pull: identical event set. Expect 0/0.
+	added, removed, err = ReplaceEvents(ctx, db, a, v3)
+	if err != nil {
+		t.Fatalf("no-op: %v", err)
+	}
+	if added != 0 || removed != 0 {
+		t.Errorf("no-op pull expected added=0 removed=0, got %d/%d", added, removed)
+	}
+}

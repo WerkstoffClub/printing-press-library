@@ -386,11 +386,9 @@ type SeaRadarRow struct {
 // if `requireTier` is non-empty, only matching tiers are returned.
 func SeaRadar(ctx context.Context, db *sql.DB, dateStart, dateEnd, requireTier string) ([]SeaRadarRow, error) {
 	sea := parseRegionFilter("SEA")
-	countries := make([]string, 0, len(sea))
 	args := []any{}
 	placeholders := []string{}
 	for c := range sea {
-		countries = append(countries, c)
 		placeholders = append(placeholders, "?")
 		args = append(args, c)
 	}
