@@ -947,6 +947,29 @@
       }
     },
     {
+      "name": "multimail",
+      "category": "social-and-messaging",
+      "api": "Multimail",
+      "description": "Email-as-a-Service for AI agents. Inbound email converted to markdown, outbound markdown converted to HTML. Built on...",
+      "path": "library/social-and-messaging/multimail",
+      "printer": "H179922",
+      "printer_name": "H179922",
+      "mcp": {
+        "binary": "multimail-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 77,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "MULTIMAIL_BEARER_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "myfitnesspal",
       "category": "productivity",
       "api": "MyFitnessPal",
