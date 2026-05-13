@@ -335,7 +335,18 @@ func (c *Client) dryRun(method, targetURL, path string, params map[string]string
 			if queryPrinted {
 				sep = "&"
 			}
-			fmt.Fprintf(os.Stderr, "  %s%s=%s\n", sep, k, params[k])
+			// Mask credential-bearing query params. Auth schemes that travel
+			// in the query string (e.g. Bandsintown's `app_id`, Steam's `key`,
+			// many SaaS APIs) would otherwise be printed in full to stderr
+			// during --dry-run — and dry-run output regularly gets shared in
+			// bug reports, CI logs, and terminal recordings. The Authorization
+			// header is masked below by the same maskToken helper; this loop
+			// closes the corresponding gap for query-string credentials.
+			val := params[k]
+			if isQueryCredentialKey(k) {
+				val = maskToken(val)
+			}
+			fmt.Fprintf(os.Stderr, "  %s%s=%s\n", sep, k, val)
 			queryPrinted = true
 		}
 	}
@@ -404,6 +415,21 @@ func maskToken(token string) string {
 		return "****"
 	}
 	return "****" + token[len(token)-4:]
+}
+
+// isQueryCredentialKey reports whether a query-string param name is known to
+// carry credential material. APIs that authenticate via the query string
+// (Bandsintown's `app_id`, Steam's `key`, generic `api_key` / `token` /
+// `access_token` patterns) leak through --dry-run output otherwise. Matched
+// case-insensitively. Conservative list — false positives just mask a harmless
+// param; false negatives leak a real secret.
+func isQueryCredentialKey(k string) bool {
+	switch strings.ToLower(k) {
+	case "app_id", "appid", "key", "api_key", "apikey",
+		"token", "access_token", "auth", "auth_token", "secret":
+		return true
+	}
+	return false
 }
 
 func truncateBody(b []byte) string {
