@@ -1,0 +1,585 @@
+name: songkick
+description: "The Songkick CLI for music-agency tour routing — every documented endpoint, a local SQLite store, and routing intelligence that no wrapper ships."
+cli_description: "The Songkick CLI for tour routing, gigography, and venue intelligence — BYO-key, offline-cached, agent-native."
+version: "0.1.0"
+base_url: "https://api.songkick.com/api/3.0"
+health_check_path: "/search/artists.json"
+
+auth:
+  type: api_key
+  in: query
+  header: "apikey"
+  format: "{token}"
+  env_vars:
+    - SONGKICK_API_KEY
+
+config:
+  format: toml
+  path: "~/.config/songkick-pp-cli/config.toml"
+
+mcp:
+  transport: [stdio, http]
+
+resources:
+  find:
+    description: "Search the Songkick API for artists, venues, locations, and events (use `search` for offline FTS over the local store)"
+    endpoints:
+      artists:
+        method: GET
+        path: "/search/artists.json"
+        description: "Search artists by name"
+        params:
+          - name: query
+            flag_name: query
+            aliases: [q]
+            type: string
+            required: true
+            description: "Artist name to search for"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number (1-indexed)"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Artist
+        response_path: "resultsPage.results.artist"
+        pagination:
+          type: page_token
+          cursor_field: "resultsPage.page"
+          has_more_field: "resultsPage.totalEntries"
+
+      venues:
+        method: GET
+        path: "/search/venues.json"
+        description: "Search venues by name"
+        params:
+          - name: query
+            flag_name: query
+            aliases: [q]
+            type: string
+            required: true
+            description: "Venue name to search for"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Venue
+        response_path: "resultsPage.results.venue"
+
+      locations:
+        method: GET
+        path: "/search/locations.json"
+        description: "Search metro areas / locations by name or coordinates"
+        params:
+          - name: query
+            flag_name: query
+            aliases: [q]
+            type: string
+            required: false
+            description: "Location name (city or country)"
+          - name: location
+            type: string
+            required: false
+            description: "Geo filter: geo:lat,lng or sk:metroAreaId"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Location
+        response_path: "resultsPage.results.location"
+
+      events:
+        method: GET
+        path: "/search/events.json"
+        description: "Search events by query, artist, location, or date range"
+        params:
+          - name: artist_name
+            flag_name: artist-name
+            type: string
+            required: false
+            description: "Filter by artist name (URL-encoded)"
+          - name: location
+            type: string
+            required: false
+            description: "Geo filter: geo:lat,lng or sk:metroAreaId"
+          - name: min_date
+            flag_name: min-date
+            type: string
+            required: false
+            format: date
+            description: "Earliest event date (YYYY-MM-DD)"
+          - name: max_date
+            flag_name: max-date
+            type: string
+            required: false
+            format: date
+            description: "Latest event date (YYYY-MM-DD)"
+          - name: type
+            type: string
+            required: false
+            enum: [Concert, Festival]
+            description: "Event type filter"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Event
+        response_path: "resultsPage.results.event"
+
+  events:
+    description: "Fetch event details and setlists"
+    endpoints:
+      get:
+        method: GET
+        path: "/events/{event_id}.json"
+        description: "Get a single event by ID"
+        params:
+          - name: event_id
+            flag_name: event-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick event ID"
+        response:
+          type: object
+          item: Event
+        response_path: "resultsPage.results.event"
+
+      setlist:
+        method: GET
+        path: "/events/{event_id}/setlists.json"
+        description: "Get the setlist for an event (when available)"
+        params:
+          - name: event_id
+            flag_name: event-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick event ID"
+        response:
+          type: array
+          item: Setlist
+        response_path: "resultsPage.results.setlist"
+
+  artists:
+    description: "Artist calendar, gigography, and similar artists"
+    endpoints:
+      calendar:
+        method: GET
+        path: "/artists/{artist_id}/calendar.json"
+        description: "Upcoming shows for an artist"
+        params:
+          - name: artist_id
+            flag_name: artist-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick artist ID, or prefix with mbid: for MusicBrainz ID"
+          - name: min_date
+            flag_name: min-date
+            type: string
+            required: false
+            format: date
+            description: "Earliest date (YYYY-MM-DD)"
+          - name: max_date
+            flag_name: max-date
+            type: string
+            required: false
+            format: date
+            description: "Latest date (YYYY-MM-DD)"
+          - name: order
+            type: string
+            required: false
+            enum: [asc, desc]
+            default: asc
+            description: "Sort order"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Event
+        response_path: "resultsPage.results.event"
+
+      gigography:
+        method: GET
+        path: "/artists/{artist_id}/gigography.json"
+        description: "Historical performances for an artist"
+        params:
+          - name: artist_id
+            flag_name: artist-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick artist ID, or prefix with mbid: for MusicBrainz ID"
+          - name: min_date
+            flag_name: min-date
+            type: string
+            required: false
+            format: date
+            description: "Earliest date (YYYY-MM-DD)"
+          - name: max_date
+            flag_name: max-date
+            type: string
+            required: false
+            format: date
+            description: "Latest date (YYYY-MM-DD)"
+          - name: order
+            type: string
+            required: false
+            enum: [asc, desc]
+            default: desc
+            description: "Sort order (default newest first)"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Event
+        response_path: "resultsPage.results.event"
+
+      similar:
+        method: GET
+        path: "/artists/{artist_id}/similar_artists.json"
+        description: "Artists similar to the given artist"
+        params:
+          - name: artist_id
+            flag_name: artist-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick artist ID, or prefix with mbid: for MusicBrainz ID"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Artist
+        response_path: "resultsPage.results.artist"
+
+  venues:
+    description: "Venue details and calendar"
+    endpoints:
+      get:
+        method: GET
+        path: "/venues/{venue_id}.json"
+        description: "Get a venue by ID (includes lat/lng for distance math)"
+        params:
+          - name: venue_id
+            flag_name: venue-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick venue ID"
+        response:
+          type: object
+          item: Venue
+        response_path: "resultsPage.results.venue"
+
+      calendar:
+        method: GET
+        path: "/venues/{venue_id}/calendar.json"
+        description: "Upcoming events at a venue"
+        params:
+          - name: venue_id
+            flag_name: venue-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick venue ID"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Event
+        response_path: "resultsPage.results.event"
+
+  metros:
+    description: "Metro-area calendars (city-level event feeds)"
+    endpoints:
+      calendar:
+        method: GET
+        path: "/metro_areas/{metro_id}/calendar.json"
+        description: "Upcoming events in a metro area"
+        params:
+          - name: metro_id
+            flag_name: metro-id
+            type: string
+            required: true
+            positional: true
+            description: "Songkick metro area ID"
+          - name: min_date
+            flag_name: min-date
+            type: string
+            required: false
+            format: date
+            description: "Earliest date (YYYY-MM-DD)"
+          - name: max_date
+            flag_name: max-date
+            type: string
+            required: false
+            format: date
+            description: "Latest date (YYYY-MM-DD)"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Event
+        response_path: "resultsPage.results.event"
+
+  users:
+    description: "User calendars, trackings, and attended events (requires user-scope auth)"
+    endpoints:
+      calendar:
+        method: GET
+        path: "/users/{username}/calendar.json"
+        description: "Upcoming events for a user's tracked artists"
+        params:
+          - name: username
+            type: string
+            required: true
+            positional: true
+            description: "Songkick username"
+          - name: reason
+            type: string
+            required: false
+            enum: [attendance, tracked_artist]
+            description: "Filter by attendance or tracked-artist reason"
+          - name: min_date
+            flag_name: min-date
+            type: string
+            required: false
+            format: date
+            description: "Earliest date (YYYY-MM-DD)"
+          - name: max_date
+            flag_name: max-date
+            type: string
+            required: false
+            format: date
+            description: "Latest date (YYYY-MM-DD)"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: CalendarEntry
+        response_path: "resultsPage.results.calendarEntry"
+
+      trackings:
+        method: GET
+        path: "/users/{username}/trackings/{tracking_type}.json"
+        description: "Tracked artists, venues, or metro areas for a user"
+        params:
+          - name: username
+            type: string
+            required: true
+            positional: true
+            description: "Songkick username"
+          - name: tracking_type
+            flag_name: tracking-type
+            type: string
+            required: true
+            positional: true
+            enum: [artist, venue, metro_area]
+            description: "What to list: artist, venue, or metro_area"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Tracking
+        response_path: "resultsPage.results.tracking"
+
+      events:
+        method: GET
+        path: "/users/{username}/events.json"
+        description: "Events a user attended or plans to attend"
+        params:
+          - name: username
+            type: string
+            required: true
+            positional: true
+            description: "Songkick username"
+          - name: attendance
+            type: string
+            required: false
+            enum: [i_went, i_might_go, all]
+            default: all
+            description: "Filter by attendance status"
+          - name: min_date
+            flag_name: min-date
+            type: string
+            required: false
+            format: date
+            description: "Earliest date (YYYY-MM-DD)"
+          - name: max_date
+            flag_name: max-date
+            type: string
+            required: false
+            format: date
+            description: "Latest date (YYYY-MM-DD)"
+          - name: page
+            type: int
+            default: 1
+            description: "Page number"
+          - name: per_page
+            flag_name: per-page
+            type: int
+            default: 50
+            description: "Results per page (max 50)"
+        response:
+          type: array
+          item: Event
+        response_path: "resultsPage.results.event"
+
+types:
+  Artist:
+    fields:
+      - name: id
+        type: int
+      - name: displayName
+        type: string
+      - name: uri
+        type: string
+      - name: identifier
+        type: string
+
+  Venue:
+    fields:
+      - name: id
+        type: int
+      - name: displayName
+        type: string
+      - name: capacity
+        type: int
+      - name: lat
+        type: float
+      - name: lng
+        type: float
+      - name: uri
+        type: string
+      - name: city
+        type: string
+
+  Location:
+    fields:
+      - name: city
+        type: string
+      - name: metroArea
+        type: string
+      - name: lat
+        type: float
+      - name: lng
+        type: float
+      - name: country
+        type: string
+
+  Event:
+    fields:
+      - name: id
+        type: int
+      - name: type
+        type: string
+      - name: displayName
+        type: string
+      - name: uri
+        type: string
+      - name: status
+        type: string
+      - name: popularity
+        type: float
+      - name: ageRestriction
+        type: string
+
+  Setlist:
+    fields:
+      - name: artist
+        type: string
+      - name: songs
+        type: string
+
+  CalendarEntry:
+    fields:
+      - name: reason
+        type: string
+      - name: event_id
+        type: int
+
+  Tracking:
+    fields:
+      - name: createdAt
+        type: string
+      - name: name
+        type: string
+      - name: id
+        type: int

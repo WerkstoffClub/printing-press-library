@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-13T08:33:28.382601Z",
+  "printing_press_version": "4.5.2",
+  "api_name": "songkick",
+  "display_name": "Songkick",
+  "cli_name": "songkick-pp-cli",
+  "owner": "user",
+  "printer": "4.5.2",
+  "printer_name": "printing-press",
+  "spec_format": "internal",
+  "spec_checksum": "sha256:2b652fca82a08c22890e6d87a282e80cb592df137efaed7e4da57a162a9afa01",
+  "run_id": "20260513-075207",
+  "description": "The Songkick CLI for tour routing, gigography, and venue intelligence — BYO-key, offline-cached, agent-native.",
+  "mcp_binary": "songkick-pp-mcp",
+  "mcp_tool_count": 15,
+  "mcp_ready": "full",
+  "api_version": "0.1.0",
+  "auth_type": "api_key",
+  "auth_env_vars": [
+    "SONGKICK_API_KEY"
+  ],
+  "novel_features": [
+    {
+      "name": "Tour-routing scan",
+      "command": "route",
+      "description": "Score an artist for routing feasibility against a target date and anchor city. Returns nearest show, daysFromTarget, distanceKm, score, and a strong-fit / considered / cold verdict."
+    },
+    {
+      "name": "Routing-gap detector",
+      "command": "gap",
+      "description": "Find date windows where an artist plays in the region but leaves a slot unbooked near the anchor city — the cheapest pitch opportunity."
+    },
+    {
+      "name": "Predictive return window",
+      "command": "predict-return",
+      "description": "Mine an artist's multi-year gigography for median inter-visit interval and seasonality patterns to forecast their next probable window in a given city."
+    },
+    {
+      "name": "Festival lineup overlap",
+      "command": "lineup-overlap",
+      "description": "Compare performances across multiple festival event IDs to surface shared artists, billing-order deltas, and headliner-vs-mid drift."
+    },
+    {
+      "name": "Cancellation reliability index",
+      "command": "reliability",
+      "description": "Compute an artist's cancellation and postponement rate over a multi-year window, with region clustering and recovery-time analysis."
+    },
+    {
+      "name": "Market saturation heatmap",
+      "command": "saturation",
+      "description": "Per-week show-count density for a metro area, capacity-weighted and venue-tier-segmented across a date range."
+    },
+    {
+      "name": "Venue-tier classifier",
+      "command": "venue-tier",
+      "description": "Cluster a metro area's venues into S / A / B / C tiers using capacity quantiles, headliner-billing frequency, and average popularity."
+    },
+    {
+      "name": "Co-touring artist graph",
+      "command": "co-tour",
+      "description": "Build an artist graph from shared performances; surface support-act candidates and stylistic neighbors out to N hops."
+    },
+    {
+      "name": "Routing batch from shortlist",
+      "command": "route-batch",
+      "description": "Run the routing-feasibility score across an entire shortlist of artists in one SQL query; sorts by verdict and emits NDJSON for downstream agents."
+    },
+    {
+      "name": "Drift watcher",
+      "command": "drift",
+      "description": "Diff current snapshot against prior — surface newly added shows near the anchor, capacity changes, billing-order promotions, and status flips since the last sync."
+    },
+    {
+      "name": "Headliner-promotion tracker",
+      "command": "promotion",
+      "description": "Walk an artist's gigography ordered by date and detect the inflection point where their billing_index crossed into the headliner slot."
+    },
+    {
+      "name": "Festival-fit scorer",
+      "command": "fit",
+      "description": "Score an artist shortlist against a festival brief (tier mix, budget caps, genre proxies) by joining venue-tier, popularity, routing feasibility, and co-tour adjacency."
+    }
+  ]
+}

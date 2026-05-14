@@ -1,0 +1,39 @@
+{
+  "manifest_version": "0.3",
+  "name": "songkick-pp-mcp",
+  "display_name": "Songkick",
+  "version": "4.5.2",
+  "description": "The Songkick CLI for tour routing, gigography, and venue intelligence — BYO-key, offline-cached, agent-native.",
+  "author": {
+    "name": "CLI Printing Press"
+  },
+  "license": "Apache-2.0",
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/songkick-pp-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/bin/songkick-pp-mcp",
+      "args": [],
+      "env": {
+        "SONGKICK_API_KEY": "${user_config.songkick_api_key}"
+      }
+    }
+  },
+  "user_config": {
+    "songkick_api_key": {
+      "type": "string",
+      "title": "SONGKICK_API_KEY",
+      "description": "Sets SONGKICK_API_KEY for the Songkick MCP server.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ]
+  }
+}

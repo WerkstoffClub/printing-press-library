@@ -1,0 +1,559 @@
+{
+  "api_name": "songkick",
+  "base_url": "https://api.songkick.com/api/3.0",
+  "description": "The Songkick CLI for music-agency tour routing — every documented endpoint, a local SQLite store, and routing intelligence that no wrapper ships.",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "api_key",
+    "header": "apikey",
+    "format": "{SONGKICK_API_KEY}",
+    "in": "query",
+    "env_vars": [
+      "SONGKICK_API_KEY"
+    ],
+    "env_var_specs": [
+      {
+        "name": "SONGKICK_API_KEY",
+        "kind": "per_call",
+        "required": true,
+        "sensitive": true,
+        "inferred": true
+      }
+    ]
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "artists_calendar",
+      "description": "Upcoming shows for an artist. Required: artist-id. Optional: min-date, max-date, order (default: asc) (plus 2 more). Returns array of Event.",
+      "method": "GET",
+      "path": "/artists/{artist_id}/calendar.json",
+      "params": [
+        {
+          "name": "artist-id",
+          "wire_name": "artist_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick artist ID, or prefix with mbid: for MusicBrainz ID",
+          "required": true
+        },
+        {
+          "name": "min-date",
+          "wire_name": "min_date",
+          "type": "string",
+          "location": "query",
+          "description": "Earliest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "max-date",
+          "wire_name": "max_date",
+          "type": "string",
+          "location": "query",
+          "description": "Latest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "location": "query",
+          "description": "Sort order"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "artists_gigography",
+      "description": "Historical performances for an artist. Required: artist-id. Optional: min-date, max-date, order (default: desc) (plus 2 more). Returns array of Event.",
+      "method": "GET",
+      "path": "/artists/{artist_id}/gigography.json",
+      "params": [
+        {
+          "name": "artist-id",
+          "wire_name": "artist_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick artist ID, or prefix with mbid: for MusicBrainz ID",
+          "required": true
+        },
+        {
+          "name": "min-date",
+          "wire_name": "min_date",
+          "type": "string",
+          "location": "query",
+          "description": "Earliest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "max-date",
+          "wire_name": "max_date",
+          "type": "string",
+          "location": "query",
+          "description": "Latest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "location": "query",
+          "description": "Sort order (default newest first)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "artists_similar",
+      "description": "Artists similar to the given artist. Required: artist-id. Optional: page (default: 1), per-page (default: 50). Returns array of Artist.",
+      "method": "GET",
+      "path": "/artists/{artist_id}/similar_artists.json",
+      "params": [
+        {
+          "name": "artist-id",
+          "wire_name": "artist_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick artist ID, or prefix with mbid: for MusicBrainz ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "events_get",
+      "description": "Get a single event by ID. Required: event-id. Returns the Event.",
+      "method": "GET",
+      "path": "/events/{event_id}.json",
+      "params": [
+        {
+          "name": "event-id",
+          "wire_name": "event_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick event ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "events_setlist",
+      "description": "Get the setlist for an event (when available). Required: event-id. Returns array of Setlist.",
+      "method": "GET",
+      "path": "/events/{event_id}/setlists.json",
+      "params": [
+        {
+          "name": "event-id",
+          "wire_name": "event_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick event ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "find_artists",
+      "description": "Search artists by name. Required: query. Optional: page (default: 1), per-page (default: 50). Returns array of Artist.",
+      "method": "GET",
+      "path": "/search/artists.json",
+      "params": [
+        {
+          "name": "query",
+          "type": "string",
+          "location": "query",
+          "description": "Artist name to search for",
+          "required": true,
+          "aliases": [
+            "q"
+          ]
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number (1-indexed)"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "find_events",
+      "description": "Search events by query, artist, location, or date range. Optional: artist-name, location, min-date (plus 4 more). Returns array of Event.",
+      "method": "GET",
+      "path": "/search/events.json",
+      "params": [
+        {
+          "name": "artist-name",
+          "wire_name": "artist_name",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by artist name (URL-encoded)"
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "location": "query",
+          "description": "Geo filter: geo:lat,lng or sk:metroAreaId"
+        },
+        {
+          "name": "min-date",
+          "wire_name": "min_date",
+          "type": "string",
+          "location": "query",
+          "description": "Earliest event date (YYYY-MM-DD)"
+        },
+        {
+          "name": "max-date",
+          "wire_name": "max_date",
+          "type": "string",
+          "location": "query",
+          "description": "Latest event date (YYYY-MM-DD)"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query",
+          "description": "Event type filter"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "find_locations",
+      "description": "Search metro areas / locations by name or coordinates. Optional: query, location, page (default: 1) (plus 1 more). Returns array of Location.",
+      "method": "GET",
+      "path": "/search/locations.json",
+      "params": [
+        {
+          "name": "query",
+          "type": "string",
+          "location": "query",
+          "description": "Location name (city or country)",
+          "aliases": [
+            "q"
+          ]
+        },
+        {
+          "name": "location",
+          "type": "string",
+          "location": "query",
+          "description": "Geo filter: geo:lat,lng or sk:metroAreaId"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "find_venues",
+      "description": "Search venues by name. Required: query. Optional: page (default: 1), per-page (default: 50). Returns array of Venue.",
+      "method": "GET",
+      "path": "/search/venues.json",
+      "params": [
+        {
+          "name": "query",
+          "type": "string",
+          "location": "query",
+          "description": "Venue name to search for",
+          "required": true,
+          "aliases": [
+            "q"
+          ]
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "metros_calendar",
+      "description": "Upcoming events in a metro area. Required: metro-id. Optional: min-date, max-date, page (default: 1) (plus 1 more). Returns array of Event.",
+      "method": "GET",
+      "path": "/metro_areas/{metro_id}/calendar.json",
+      "params": [
+        {
+          "name": "metro-id",
+          "wire_name": "metro_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick metro area ID",
+          "required": true
+        },
+        {
+          "name": "min-date",
+          "wire_name": "min_date",
+          "type": "string",
+          "location": "query",
+          "description": "Earliest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "max-date",
+          "wire_name": "max_date",
+          "type": "string",
+          "location": "query",
+          "description": "Latest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "users_calendar",
+      "description": "Upcoming events for a user's tracked artists. Required: username. Optional: reason, min-date, max-date (plus 2 more). Returns array of CalendarEntry.",
+      "method": "GET",
+      "path": "/users/{username}/calendar.json",
+      "params": [
+        {
+          "name": "username",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick username",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by attendance or tracked-artist reason"
+        },
+        {
+          "name": "min-date",
+          "wire_name": "min_date",
+          "type": "string",
+          "location": "query",
+          "description": "Earliest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "max-date",
+          "wire_name": "max_date",
+          "type": "string",
+          "location": "query",
+          "description": "Latest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "users_events",
+      "description": "Events a user attended or plans to attend. Required: username. Optional: attendance (default: all), min-date, max-date (plus 2 more). Returns array of Event.",
+      "method": "GET",
+      "path": "/users/{username}/events.json",
+      "params": [
+        {
+          "name": "username",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick username",
+          "required": true
+        },
+        {
+          "name": "attendance",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by attendance status"
+        },
+        {
+          "name": "min-date",
+          "wire_name": "min_date",
+          "type": "string",
+          "location": "query",
+          "description": "Earliest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "max-date",
+          "wire_name": "max_date",
+          "type": "string",
+          "location": "query",
+          "description": "Latest date (YYYY-MM-DD)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "users_trackings",
+      "description": "Tracked artists, venues, or metro areas for a user. Required: username, tracking-type. Optional: page (default: 1), per-page (default: 50). Returns array of Tracking.",
+      "method": "GET",
+      "path": "/users/{username}/trackings/{tracking_type}.json",
+      "params": [
+        {
+          "name": "username",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick username",
+          "required": true
+        },
+        {
+          "name": "tracking-type",
+          "wire_name": "tracking_type",
+          "type": "string",
+          "location": "path",
+          "description": "What to list: artist, venue, or metro_area",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "venues_calendar",
+      "description": "Upcoming events at a venue. Required: venue-id. Optional: page (default: 1), per-page (default: 50). Returns array of Event.",
+      "method": "GET",
+      "path": "/venues/{venue_id}/calendar.json",
+      "params": [
+        {
+          "name": "venue-id",
+          "wire_name": "venue_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick venue ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number"
+        },
+        {
+          "name": "per-page",
+          "wire_name": "per_page",
+          "type": "int",
+          "location": "query",
+          "description": "Results per page (max 50)"
+        }
+      ]
+    },
+    {
+      "name": "venues_get",
+      "description": "Get a venue by ID (includes lat/lng for distance math). Required: venue-id. Returns the Venue.",
+      "method": "GET",
+      "path": "/venues/{venue_id}.json",
+      "params": [
+        {
+          "name": "venue-id",
+          "wire_name": "venue_id",
+          "type": "string",
+          "location": "path",
+          "description": "Songkick venue ID",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

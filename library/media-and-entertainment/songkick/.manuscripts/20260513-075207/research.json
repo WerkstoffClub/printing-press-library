@@ -1,0 +1,383 @@
+{
+  "api_name": "songkick",
+  "novelty_score": 9,
+  "alternatives": [
+    {
+      "name": "songkick-api-node",
+      "url": "https://github.com/schnogz/songkick-api-node",
+      "language": "JavaScript",
+      "install_method": "",
+      "stars": 8,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "python-songkick",
+      "url": "https://github.com/mattdennewitz/python-songkick",
+      "language": "Python",
+      "install_method": "",
+      "stars": 27,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "songkick-pwa",
+      "url": "https://github.com/zoetrope69/songkick-pwa",
+      "language": "JavaScript",
+      "install_method": "",
+      "stars": 8,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "net-songkick",
+      "url": "https://github.com/davorg-cpan/net-songkick",
+      "language": "Perl",
+      "install_method": "",
+      "stars": 5,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "Songkick-Unofficial-API",
+      "url": "https://github.com/Integuru-AI/Songkick-Unofficial-API",
+      "language": "Python",
+      "install_method": "",
+      "stars": 1,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "tourGEN",
+      "url": "https://github.com/suuhm/tourGEN",
+      "language": "Python",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    }
+  ],
+  "gaps": [
+    "Live API testing skipped — user has no API key; verification limited to documented surface and mock responses",
+    "predict-return and reliability features require ≥3 years of synced gigography to produce meaningful output",
+    "drift watcher returns empty until at least one prior sync snapshot exists in the store"
+  ],
+  "patterns": [
+    "Query-param API key auth (apikey=\u003ckey\u003e)",
+    "Wrapped resultsPage envelope on every response",
+    "Hard 50-row per_page cap requires client-side page stitching"
+  ],
+  "recommendation": "proceed",
+  "researched_at": "2026-05-13T07:55:00Z",
+  "novel_features": [
+    {
+      "name": "Tour-routing scan",
+      "command": "route",
+      "description": "Score an artist for routing feasibility against a target date and anchor city. Returns nearest show, daysFromTarget, distanceKm, score, and a strong-fit / considered / cold verdict.",
+      "rationale": "Cross-joins synced artist calendar + great-circle distance + signed day-delta + 60/40 scoring formula in one SQL pass. The Songkick API returns raw events; the scoring requires local geo and time math.",
+      "example": "songkick-pp-cli route --artist 297938 --anchor jakarta --on 2026-09-20 --window 14 --radius 5000 --json",
+      "why_it_matters": "Reach for this when a booking team needs to decide if a target artist is worth a cold pitch or a routing offer. Strong-fit verdict = artist is already in the region.",
+      "group": "Routing intelligence"
+    },
+    {
+      "name": "Routing-gap detector",
+      "command": "gap",
+      "description": "Find date windows where an artist plays in the region but leaves a slot unbooked near the anchor city — the cheapest pitch opportunity.",
+      "rationale": "Pure local interval math across the artist's calendar; impossible without a time-series of their tour dates.",
+      "example": "songkick-pp-cli gap --artist 297938 --anchor jakarta --window 21 --json",
+      "why_it_matters": "Use when you want to know not just whether the artist is nearby, but whether there is an open day in their schedule that could absorb a Jakarta date.",
+      "group": "Routing intelligence"
+    },
+    {
+      "name": "Predictive return window",
+      "command": "predict-return",
+      "description": "Mine an artist's multi-year gigography for median inter-visit interval and seasonality patterns to forecast their next probable window in a given city.",
+      "rationale": "Requires multi-year gigography in local store; no single API call exposes inter-visit cadence or seasonality.",
+      "example": "songkick-pp-cli predict-return --artist 297938 --city jakarta --json",
+      "why_it_matters": "Reach for this when planning a multi-quarter calendar; tells you when an artist is overdue for a regional visit.",
+      "group": "Forward-looking intelligence"
+    },
+    {
+      "name": "Festival lineup overlap",
+      "command": "lineup-overlap",
+      "description": "Compare performances across multiple festival event IDs to surface shared artists, billing-order deltas, and headliner-vs-mid drift.",
+      "rationale": "Joins performances across N events using denormalized local performances table; pure set algebra impossible from raw API responses.",
+      "example": "songkick-pp-cli lineup-overlap --events 12345,67890,11223 --json",
+      "why_it_matters": "Use during festival programming to check differentiation against competing festivals in the same season.",
+      "group": "Lineup intelligence"
+    },
+    {
+      "name": "Cancellation reliability index",
+      "command": "reliability",
+      "description": "Compute an artist's cancellation and postponement rate over a multi-year window, with region clustering and recovery-time analysis.",
+      "rationale": "Requires aggregating event status (ok / cancelled / postponed) across an artist's full event history — not surfaced by any single API endpoint.",
+      "example": "songkick-pp-cli reliability --artist 297938 --years 3 --json",
+      "why_it_matters": "Use before signing a deposit-heavy headliner. High cancellation rate = higher booking risk.",
+      "group": "Risk intelligence"
+    },
+    {
+      "name": "Market saturation heatmap",
+      "command": "saturation",
+      "description": "Per-week show-count density for a metro area, capacity-weighted and venue-tier-segmented across a date range.",
+      "rationale": "Joins metro calendar with local venue capacity + tier tables — single SQL aggregation that the raw API can not return.",
+      "example": "songkick-pp-cli saturation --metro 17681 --from 2026-08-01 --to 2026-12-31 --json",
+      "why_it_matters": "Use to answer 'is this date already crowded?' before committing budget to a competing event.",
+      "group": "Market intelligence"
+    },
+    {
+      "name": "Venue-tier classifier",
+      "command": "venue-tier",
+      "description": "Cluster a metro area's venues into S / A / B / C tiers using capacity quantiles, headliner-billing frequency, and average popularity.",
+      "rationale": "Persistent tier labels computed locally from venue + performances + events tables; foundational input to other commands.",
+      "example": "songkick-pp-cli venue-tier --metro 17681 --json",
+      "why_it_matters": "Reach for this once per metro to label your venue inventory; downstream commands (route, saturation, fit) consume the tier labels.",
+      "group": "Market intelligence"
+    },
+    {
+      "name": "Co-touring artist graph",
+      "command": "co-tour",
+      "description": "Build an artist graph from shared performances; surface support-act candidates and stylistic neighbors out to N hops.",
+      "rationale": "Pure local graph computation across the performances table; depth-2 traversal would mean dozens of API round-trips otherwise.",
+      "example": "songkick-pp-cli co-tour --artist 297938 --depth 2 --json",
+      "why_it_matters": "Use to find support acts that have already shared bills with the headliner, or to discover stylistic neighbors for an unsigned slot.",
+      "group": "Lineup intelligence"
+    },
+    {
+      "name": "Routing batch from shortlist",
+      "command": "route-batch",
+      "description": "Run the routing-feasibility score across an entire shortlist of artists in one SQL query; sorts by verdict and emits NDJSON for downstream agents.",
+      "rationale": "API-only approach means N round-trips with no scoring; local store + single SQL aggregation finishes in milliseconds for hundreds of artists.",
+      "example": "songkick-pp-cli route-batch --shortlist memory/active-shortlist.csv --anchor jakarta --on 2026-09-20 --window 14 --json",
+      "why_it_matters": "Reach for this when you have a 50-200 artist shortlist and need to rank them by routing economics for a specific event date.",
+      "group": "Routing intelligence"
+    },
+    {
+      "name": "Drift watcher",
+      "command": "drift",
+      "description": "Diff current snapshot against prior — surface newly added shows near the anchor, capacity changes, billing-order promotions, and status flips since the last sync.",
+      "rationale": "Requires snapshot history table populated on every sync; impossible without persistent state between API calls.",
+      "example": "songkick-pp-cli drift --since 7d --near jakarta --json",
+      "why_it_matters": "Use during the daily-refresh cycle to surface what changed that actually affects the booking team's workflow today.",
+      "group": "Forward-looking intelligence"
+    },
+    {
+      "name": "Headliner-promotion tracker",
+      "command": "promotion",
+      "description": "Walk an artist's gigography ordered by date and detect the inflection point where their billing_index crossed into the headliner slot.",
+      "rationale": "Pure local timeline analysis on the performances table; not derivable from any single API endpoint.",
+      "example": "songkick-pp-cli promotion --artist 297938 --json",
+      "why_it_matters": "Reach for this when scouting emerging artists — surfaces 'about to break' candidates whose billing position is climbing.",
+      "group": "Forward-looking intelligence"
+    },
+    {
+      "name": "Festival-fit scorer",
+      "command": "fit",
+      "description": "Score an artist shortlist against a festival brief (tier mix, budget caps, genre proxies) by joining venue-tier, popularity, routing feasibility, and co-tour adjacency.",
+      "rationale": "Composite of every other transcendence feature; requires all local tables joined in one pass.",
+      "example": "songkick-pp-cli fit --brief memory/event-brief.yml --shortlist memory/active-shortlist.csv --json",
+      "why_it_matters": "Reach for this as the final lineup-planner pass — emits ranked artist-to-event fit scores agents can hand to the booking team.",
+      "group": "Lineup intelligence"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Tour-routing scan",
+      "command": "route",
+      "description": "Score an artist for routing feasibility against a target date and anchor city. Returns nearest show, daysFromTarget, distanceKm, score, and a strong-fit / considered / cold verdict.",
+      "rationale": "Cross-joins synced artist calendar + great-circle distance + signed day-delta + 60/40 scoring formula in one SQL pass. The Songkick API returns raw events; the scoring requires local geo and time math.",
+      "example": "songkick-pp-cli route --artist 297938 --anchor jakarta --on 2026-09-20 --window 14 --radius 5000 --json",
+      "why_it_matters": "Reach for this when a booking team needs to decide if a target artist is worth a cold pitch or a routing offer. Strong-fit verdict = artist is already in the region.",
+      "group": "Routing intelligence"
+    },
+    {
+      "name": "Routing-gap detector",
+      "command": "gap",
+      "description": "Find date windows where an artist plays in the region but leaves a slot unbooked near the anchor city — the cheapest pitch opportunity.",
+      "rationale": "Pure local interval math across the artist's calendar; impossible without a time-series of their tour dates.",
+      "example": "songkick-pp-cli gap --artist 297938 --anchor jakarta --window 21 --json",
+      "why_it_matters": "Use when you want to know not just whether the artist is nearby, but whether there is an open day in their schedule that could absorb a Jakarta date.",
+      "group": "Routing intelligence"
+    },
+    {
+      "name": "Predictive return window",
+      "command": "predict-return",
+      "description": "Mine an artist's multi-year gigography for median inter-visit interval and seasonality patterns to forecast their next probable window in a given city.",
+      "rationale": "Requires multi-year gigography in local store; no single API call exposes inter-visit cadence or seasonality.",
+      "example": "songkick-pp-cli predict-return --artist 297938 --city jakarta --json",
+      "why_it_matters": "Reach for this when planning a multi-quarter calendar; tells you when an artist is overdue for a regional visit.",
+      "group": "Forward-looking intelligence"
+    },
+    {
+      "name": "Festival lineup overlap",
+      "command": "lineup-overlap",
+      "description": "Compare performances across multiple festival event IDs to surface shared artists, billing-order deltas, and headliner-vs-mid drift.",
+      "rationale": "Joins performances across N events using denormalized local performances table; pure set algebra impossible from raw API responses.",
+      "example": "songkick-pp-cli lineup-overlap --events 12345,67890,11223 --json",
+      "why_it_matters": "Use during festival programming to check differentiation against competing festivals in the same season.",
+      "group": "Lineup intelligence"
+    },
+    {
+      "name": "Cancellation reliability index",
+      "command": "reliability",
+      "description": "Compute an artist's cancellation and postponement rate over a multi-year window, with region clustering and recovery-time analysis.",
+      "rationale": "Requires aggregating event status (ok / cancelled / postponed) across an artist's full event history — not surfaced by any single API endpoint.",
+      "example": "songkick-pp-cli reliability --artist 297938 --years 3 --json",
+      "why_it_matters": "Use before signing a deposit-heavy headliner. High cancellation rate = higher booking risk.",
+      "group": "Risk intelligence"
+    },
+    {
+      "name": "Market saturation heatmap",
+      "command": "saturation",
+      "description": "Per-week show-count density for a metro area, capacity-weighted and venue-tier-segmented across a date range.",
+      "rationale": "Joins metro calendar with local venue capacity + tier tables — single SQL aggregation that the raw API can not return.",
+      "example": "songkick-pp-cli saturation --metro 17681 --from 2026-08-01 --to 2026-12-31 --json",
+      "why_it_matters": "Use to answer 'is this date already crowded?' before committing budget to a competing event.",
+      "group": "Market intelligence"
+    },
+    {
+      "name": "Venue-tier classifier",
+      "command": "venue-tier",
+      "description": "Cluster a metro area's venues into S / A / B / C tiers using capacity quantiles, headliner-billing frequency, and average popularity.",
+      "rationale": "Persistent tier labels computed locally from venue + performances + events tables; foundational input to other commands.",
+      "example": "songkick-pp-cli venue-tier --metro 17681 --json",
+      "why_it_matters": "Reach for this once per metro to label your venue inventory; downstream commands (route, saturation, fit) consume the tier labels.",
+      "group": "Market intelligence"
+    },
+    {
+      "name": "Co-touring artist graph",
+      "command": "co-tour",
+      "description": "Build an artist graph from shared performances; surface support-act candidates and stylistic neighbors out to N hops.",
+      "rationale": "Pure local graph computation across the performances table; depth-2 traversal would mean dozens of API round-trips otherwise.",
+      "example": "songkick-pp-cli co-tour --artist 297938 --depth 2 --json",
+      "why_it_matters": "Use to find support acts that have already shared bills with the headliner, or to discover stylistic neighbors for an unsigned slot.",
+      "group": "Lineup intelligence"
+    },
+    {
+      "name": "Routing batch from shortlist",
+      "command": "route-batch",
+      "description": "Run the routing-feasibility score across an entire shortlist of artists in one SQL query; sorts by verdict and emits NDJSON for downstream agents.",
+      "rationale": "API-only approach means N round-trips with no scoring; local store + single SQL aggregation finishes in milliseconds for hundreds of artists.",
+      "example": "songkick-pp-cli route-batch --shortlist memory/active-shortlist.csv --anchor jakarta --on 2026-09-20 --window 14 --json",
+      "why_it_matters": "Reach for this when you have a 50-200 artist shortlist and need to rank them by routing economics for a specific event date.",
+      "group": "Routing intelligence"
+    },
+    {
+      "name": "Drift watcher",
+      "command": "drift",
+      "description": "Diff current snapshot against prior — surface newly added shows near the anchor, capacity changes, billing-order promotions, and status flips since the last sync.",
+      "rationale": "Requires snapshot history table populated on every sync; impossible without persistent state between API calls.",
+      "example": "songkick-pp-cli drift --since 7d --near jakarta --json",
+      "why_it_matters": "Use during the daily-refresh cycle to surface what changed that actually affects the booking team's workflow today.",
+      "group": "Forward-looking intelligence"
+    },
+    {
+      "name": "Headliner-promotion tracker",
+      "command": "promotion",
+      "description": "Walk an artist's gigography ordered by date and detect the inflection point where their billing_index crossed into the headliner slot.",
+      "rationale": "Pure local timeline analysis on the performances table; not derivable from any single API endpoint.",
+      "example": "songkick-pp-cli promotion --artist 297938 --json",
+      "why_it_matters": "Reach for this when scouting emerging artists — surfaces 'about to break' candidates whose billing position is climbing.",
+      "group": "Forward-looking intelligence"
+    },
+    {
+      "name": "Festival-fit scorer",
+      "command": "fit",
+      "description": "Score an artist shortlist against a festival brief (tier mix, budget caps, genre proxies) by joining venue-tier, popularity, routing feasibility, and co-tour adjacency.",
+      "rationale": "Composite of every other transcendence feature; requires all local tables joined in one pass.",
+      "example": "songkick-pp-cli fit --brief memory/event-brief.yml --shortlist memory/active-shortlist.csv --json",
+      "why_it_matters": "Reach for this as the final lineup-planner pass — emits ranked artist-to-event fit scores agents can hand to the booking team.",
+      "group": "Lineup intelligence"
+    }
+  ],
+  "narrative": {
+    "display_name": "Songkick",
+    "headline": "The Songkick CLI for music-agency tour routing — every documented endpoint, a local SQLite store, and routing intelligence that no wrapper ships.",
+    "value_prop": "Brings every documented Songkick v3.0 endpoint into a single Go binary with offline FTS search, persistent SQLite store, and great-circle distance math. Pairs the documented surface with twelve novel commands (`route`, `gap`, `predict-return`, `reliability`, `saturation`, `venue-tier`, `co-tour`, `route-batch`, `drift`, `promotion`, `lineup-overlap`, `fit`) built for festival programmers who need to answer routing and lineup questions in seconds, not API round-trips.",
+    "auth_narrative": "Songkick's public API key program is effectively closed to new applicants — bring your own legacy or partner key via the `SONGKICK_API_KEY` environment variable. The CLI never sends the key anywhere except `api.songkick.com/api/3.0`.",
+    "quickstart": [
+      {
+        "command": "songkick-pp-cli doctor",
+        "comment": "set SONGKICK_API_KEY env var first; this verifies auth + reachability"
+      },
+      {
+        "command": "songkick-pp-cli find artists --query Radiohead --json --select id,displayName",
+        "comment": "resolve an artist name to a Songkick ID"
+      },
+      {
+        "command": "songkick-pp-cli artists calendar 297938 --json",
+        "comment": "fetch upcoming shows for the artist (populates local store)"
+      },
+      {
+        "command": "songkick-pp-cli route --artist 297938 --anchor jakarta --on 2026-09-20 --window 14 --json",
+        "comment": "score the artist for a Jakarta date"
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "HTTP 401 'Invalid or missing apikey'",
+        "fix": "Export SONGKICK_API_KEY with a valid key. Songkick closed new-applicant access ~2017; legacy/partner keys still work."
+      },
+      {
+        "symptom": "Empty result from `route` for an artist you know is touring",
+        "fix": "Run `songkick-pp-cli sync --artist \u003cid\u003e` first — `route` reads from the local store and needs that artist's calendar synced."
+      },
+      {
+        "symptom": "`page` parameter ignored / only 50 results",
+        "fix": "The Songkick API caps `per_page` at 50. The CLI auto-stitches pages; pass `--limit 0` to fetch all pages, or set a higher `--limit`."
+      },
+      {
+        "symptom": "Stale data after Songkick made site changes",
+        "fix": "Songkick was acquired by Suno in Nov 2025; surface changes may happen. Run `songkick-pp-cli doctor` to confirm endpoint reachability."
+      }
+    ],
+    "when_to_use": "Reach for this CLI when you need to feed a booking team or tour-routing workflow with structured Songkick data — routing-feasibility checks for a target date, shortlist scoring, gigography-derived risk signals, or festival lineup analysis. It assumes you already hold a legacy Songkick API key. Pair with the Bandsintown CLI for cross-source confirmation.",
+    "recipes": [
+      {
+        "title": "Find routing-feasible artists for a Jakarta event",
+        "command": "songkick-pp-cli route-batch --shortlist memory/active-shortlist.csv --anchor jakarta --on 2026-09-20 --window 14 --radius 5000 --json --select artist,nearestShow.date,nearestShow.distanceKm,score,verdict",
+        "explanation": "Scores an entire shortlist against a target date and emits NDJSON ready for downstream agents to filter."
+      },
+      {
+        "title": "Detect open windows in a target artist's tour",
+        "command": "songkick-pp-cli gap --artist 297938 --anchor jakarta --window 21 --json --select start,end,nearestCity,daysOpen",
+        "explanation": "Returns date windows where the artist plays in the region but leaves a slot unbooked near Jakarta — the cheapest pitch opportunity."
+      },
+      {
+        "title": "Tier-label every Jakarta venue",
+        "command": "songkick-pp-cli venue-tier --metro 17681 --json --select id,displayName,capacity,tier",
+        "explanation": "Classifies Jakarta venues into S/A/B/C tiers and persists the labels for downstream `saturation` and `fit` commands."
+      },
+      {
+        "title": "Check festival lineup overlap with a competitor",
+        "command": "songkick-pp-cli lineup-overlap --events 12345,67890 --agent --select sharedArtists,billingDelta",
+        "explanation": "Surfaces shared artists between two festivals' performance lists for differentiation analysis."
+      },
+      {
+        "title": "Detect what changed near the anchor since last sync",
+        "command": "songkick-pp-cli drift --since 7d --near jakarta --json --select changeType,artist,start.date,venue.displayName",
+        "explanation": "Diffs the last week of sync snapshots and emits booking-team-relevant changes only."
+      }
+    ],
+    "trigger_phrases": [
+      "find artists near jakarta",
+      "songkick route check",
+      "is this artist touring in southeast asia",
+      "lineup overlap between festivals",
+      "venue tier classification",
+      "use songkick-pp-cli",
+      "run songkick"
+    ]
+  }
+}
